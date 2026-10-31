@@ -195,7 +195,6 @@ function Avisos({ av }) {
   const itens = []
   if (av.materiais_sem_cadastro?.length) itens.push(`${av.materiais_sem_cadastro.length} material(is) ainda sem cadastro: ${av.materiais_sem_cadastro.slice(0, 8).join(', ')}${av.materiais_sem_cadastro.length > 8 ? '…' : ''}`)
   if (av.papeis_sem_cadastro?.length) itens.push(`${av.papeis_sem_cadastro.length} código(s) de papel sem cadastro: ${av.papeis_sem_cadastro.slice(0, 8).join(', ')}`)
-  if (av.lotes_sem_conversao) itens.push(`${av.lotes_sem_conversao} lote(s) de contrato sem conversão de peso/metros (envie o Lançamento de produção)`)
   if (!itens.length) return null
   return <ul>{itens.map((i, k) => <li key={k}>{i}</li>)}</ul>
 }

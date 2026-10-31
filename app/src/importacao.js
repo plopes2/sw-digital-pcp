@@ -39,7 +39,7 @@ export const TIPOS = {
   },
   estoque_bobinas: {
     titulo: 'Estoque de bobinas',
-    origem: 'Export do BI (Kiwi) — arquivo "Estoque Bobinas"',
+    origem: 'Export do BI (Kiwi) — arquivo "Estoque Bobinas" · única base de estoque (MTO e contratos MTS)',
     campos: {
       sku_bobina: { nomes: ['codigo papel', 'sku bobina', 'codigo'], tipo: 'texto', obrigatorio: true },
       classificacao_bobina: { nomes: ['classificacao bobina'], tipo: 'texto', obrigatorio: true },
@@ -58,21 +58,6 @@ export const TIPOS = {
     },
     resumo: (ls) => `${ls.length} linhas · ${num(ls.reduce((a, l) => a + (l.m_linear || 0), 0))} m lineares`,
   },
-  estoque_sap: {
-    titulo: 'Estoque SAP (MB52)',
-    origem: 'Extração MB52 do SAP — lotes por material',
-    campos: {
-      sku_bobina: { nomes: ['n do material', 'material', 'no do material', 'nº do material'], tipo: 'texto', obrigatorio: true },
-      centro: { nomes: ['cen', 'centro'], tipo: 'texto' },
-      deposito: { nomes: ['dep', 'deposito'], tipo: 'texto' },
-      lote: { nomes: ['lote'], tipo: 'texto', obrigatorio: true },
-      unidade: { nomes: ['umb', 'um', 'unidade'], tipo: 'texto' },
-      utilizacao_livre_kg: { nomes: ['utilizacao livre'], tipo: 'num', obrigatorio: true },
-    },
-    chave: 'lote',
-    valida() {},
-    resumo: (ls) => `${ls.length} lotes · ${num(ls.reduce((a, l) => a + (l.utilizacao_livre_kg || 0), 0))} kg livres`,
-  },
   estoque_papel: {
     titulo: 'Estoque de papel',
     origem: 'Tabela dinâmica do SAP — "Row Labels" (código do papel) e "Contagem de Lote"',
@@ -87,23 +72,9 @@ export const TIPOS = {
     },
     resumo: (ls) => `${ls.length} códigos de papel · ${ls.reduce((a, l) => a + (l.qtde_lotes || 0), 0)} lotes`,
   },
-  lancamento_producao: {
-    titulo: 'Lançamento de produção (conversão de lotes)',
-    origem: 'Planilha de lançamento da produção — peso e metros de saída por lote',
-    campos: {
-      lote: { nomes: ['lote'], tipo: 'texto', obrigatorio: true },
-      peso_saida_kg: { nomes: ['peso saida kg', 'peso saida', 'peso kg'], tipo: 'num', obrigatorio: true },
-      m_linear_saida: { nomes: ['m linear saida', 'metros saida'], tipo: 'num', obrigatorio: true },
-    },
-    chave: 'lote',
-    valida(l, erro) {
-      if (!(l.peso_saida_kg > 0)) erro('Peso de saída deve ser maior que zero')
-    },
-    resumo: (ls) => `${ls.length} lotes`,
-  },
 }
 
-export const ORDEM_TIPOS = ['pedidos', 'estoque_bobinas', 'estoque_sap', 'estoque_papel', 'lancamento_producao']
+export const ORDEM_TIPOS = ['pedidos', 'estoque_bobinas', 'estoque_papel']
 
 function num(n) { return Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) }
 
@@ -189,8 +160,6 @@ export async function lerArquivo(file, tipo) {
   const linhas = []
   const erros = []
   let ignoradas = 0
-  const vistos = new Map()
-  let duplicadas = 0
 
   for (let r = iCab + 1; r < dados.length; r++) {
     const bruto = dados[r]
@@ -218,17 +187,11 @@ export async function lerArquivo(file, tipo) {
     if (r2 === 'ignorar') { ignoradas++; continue }
     for (const k of obrig) if (l[k] === null || l[k] === undefined) erro(`Falta "${def.campos[k].nomes[0]}"`)
     if (errosLinha.length) { erros.push({ linha: r + 1, msg: errosLinha.join('; ') }); continue }
-    if (tipo === 'estoque_sap' || tipo === 'lancamento_producao') {
-      const ch = l.lote
-      if (vistos.has(ch)) duplicadas++
-      vistos.set(ch, true)
-    }
     linhas.push(l)
   }
 
   const avisos = []
   if (ignoradas) avisos.push(`${ignoradas} linha(s) sem identificador ou de total foram ignoradas.`)
-  if (duplicadas) avisos.push(`${duplicadas} lote(s) repetido(s) no arquivo.`)
   if (tipo === 'pedidos') {
     const semData = linhas.filter((l) => !l.data_onduladeira).length
     if (semData) avisos.push(`${semData} pedido(s) sem Data onduladeira.`)
