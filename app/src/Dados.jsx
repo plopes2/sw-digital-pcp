@@ -195,7 +195,6 @@ function Avisos({ av }) {
   const itens = []
   if (av.materiais_sem_cadastro?.length) itens.push(`${av.materiais_sem_cadastro.length} material(is) ainda sem cadastro: ${av.materiais_sem_cadastro.slice(0, 8).join(', ')}${av.materiais_sem_cadastro.length > 8 ? '…' : ''}`)
   if (av.papeis_sem_cadastro?.length) itens.push(`${av.papeis_sem_cadastro.length} código(s) de papel sem cadastro: ${av.papeis_sem_cadastro.slice(0, 8).join(', ')}`)
-  if (av.bobinas_contrato_sem_material?.length) itens.push(`${av.bobinas_contrato_sem_material.length} bobina(s) de contrato com estoque sem Material no arquivo (não entram no estoque do contrato): ${av.bobinas_contrato_sem_material.join(', ')}`)
   if (!itens.length) return null
   return <ul>{itens.map((i, k) => <li key={k}>{i}</li>)}</ul>
 }
