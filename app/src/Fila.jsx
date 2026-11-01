@@ -420,11 +420,11 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir }) {
           <div className="c s2 mono">
             <TextEdit className="mono" value={r.op} placeholder="nº OP" label="Número da OP gerada no SAP" disabled={!ehController} onSave={(v) => salvar(r.id, { op: v })} />
           </div>
-          <div className="c s3 mono" style={{ fontWeight: 600 }}>{r.material}</div>
-          <div className="c s4" style={excluir ? { justifyContent: 'space-between' } : undefined}>
-            <span className="clamp" title={nomeCli}>{nomeCli}</span>
-            {excluir && ehController && <button className="xbtn" style={{ color: '#B42318' }} title="Excluir OP da Fila" aria-label={'Excluir OP ' + (r.op || r.material)} onClick={() => excluir(r)}>×</button>}
+          <div className="c s3 mono" style={{ fontWeight: 600, gap: 0, paddingLeft: 3, paddingRight: 3 }}>
+            {excluir && ehController && <button className="xbtn" style={{ color: '#B42318', padding: '0 3px 0 0' }} title="Excluir OP da Fila" aria-label={'Excluir OP ' + (r.op || r.material)} onClick={() => excluir(r)}>×</button>}
+            {r.material}
           </div>
+          <div className="c s4"><span className="clamp" title={nomeCli}>{nomeCli}</span></div>
           <div className="c mono">{r.sku_bobina ?? '—'}</div>
           <div className="c mono">{r.sku_cliche ?? '—'}</div>
           <div className="c edit">
