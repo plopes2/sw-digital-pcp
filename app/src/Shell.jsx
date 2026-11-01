@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { supabase } from './supabase.js'
+import { supabase, acesso } from './supabase.js'
 import Fila from './Fila.jsx'
 import Dados from './Dados.jsx'
 import Historico from './Historico.jsx'
@@ -21,6 +21,17 @@ const PERFIL = { controller: 'Controller', operacao: 'Operação', consultor: 'C
 export default function Shell({ session, usuario }) {
   const [pagina, setPagina] = useState('Fila')
   const [conta, setConta] = useState(false)
+  const [pendentes, setPendentes] = useState(0)
+  const ehController = usuario.perfil === 'controller'
+  useEffect(() => {
+    if (!ehController) return
+    let vivo = true
+    const ler = () => acesso().from('usuario').select('id', { count: 'exact', head: true }).eq('status', 'pendente')
+      .then(({ count, error }) => { if (vivo && !error) setPendentes(count ?? 0) })
+    ler()
+    const t = setInterval(ler, 60000)
+    return () => { vivo = false; clearInterval(t) }
+  }, [ehController])
   useEffect(() => {
     if (!conta) return
     const fechar = (e) => { if (e.key === 'Escape') setConta(false) }
@@ -44,6 +55,7 @@ export default function Shell({ session, usuario }) {
             <button key={m} className={'navlink' + (m === pagina ? ' on' : '')} disabled={!disponiveis[m]} title={disponiveis[m] ? '' : m === 'Usuários e logs' ? 'Somente Controller' : 'Em breve'} onClick={() => setPagina(m)}>
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={ICONS[m]} /></svg>
               <span className="navlbl">{m}</span>
+              {m === 'Usuários e logs' && pendentes > 0 && <span className="dot" role="status" aria-label={`${pendentes} aprovação(ões) pendente(s)`} title={`${pendentes} aprovação(ões) pendente(s)`} />}
             </button>
           ))}
           <button className="navfoot" aria-haspopup="dialog" aria-expanded={conta} title={`${nome} — clique para trocar de conta ou sair`} onClick={() => setConta((v) => !v)}>
@@ -73,7 +85,7 @@ export default function Shell({ session, usuario }) {
         </>
       )}
       <main className="main">
-        {pagina === 'Dados' ? <Dados perfil={usuario.perfil} /> : pagina === 'Histórico' ? <Historico /> : pagina === 'Usuários e logs' ? <UsuariosLogs perfil={usuario.perfil} meuId={session.user.id} /> : <Fila perfil={usuario.perfil} />}
+        {pagina === 'Dados' ? <Dados perfil={usuario.perfil} /> : pagina === 'Histórico' ? <Historico /> : pagina === 'Usuários e logs' ? <UsuariosLogs perfil={usuario.perfil} meuId={session.user.id} aoMudarPendentes={setPendentes} /> : <Fila perfil={usuario.perfil} />}
       </main>
     </div>
   )

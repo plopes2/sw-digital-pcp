@@ -15,7 +15,7 @@ const fmtDH = (s) => (s ? new Date(s).toLocaleString('pt-BR', { dateStyle: 'shor
 const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
 const ocultos = new Set(['atualizado_em'])
 
-export default function UsuariosLogs({ perfil, meuId }) {
+export default function UsuariosLogs({ perfil, meuId, aoMudarPendentes }) {
   const [aba, setAba] = useState('usuarios')
   const [usuarios, setUsuarios] = useState(null)
   const [erro, setErro] = useState(null)
@@ -26,6 +26,10 @@ export default function UsuariosLogs({ perfil, meuId }) {
     setUsuarios(data)
   }, [])
   useEffect(() => { if (perfil === 'controller') carregarUsuarios() }, [perfil, carregarUsuarios])
+
+  useEffect(() => {
+    if (usuarios && aoMudarPendentes) aoMudarPendentes(usuarios.filter((x) => x.status === 'pendente').length)
+  }, [usuarios, aoMudarPendentes])
 
   if (perfil !== 'controller') {
     return <div className="msg err">Esta aba é exclusiva do perfil Controller.</div>
