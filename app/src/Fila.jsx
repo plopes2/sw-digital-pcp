@@ -153,6 +153,14 @@ export default function Fila({ perfil }) {
     await carregar()
   }
 
+  async function excluirOp(r) {
+    const nome = [r.op && 'OP ' + r.op, r.material, r.data_producao && fmtD(r.data_producao)].filter(Boolean).join(' · ')
+    if (!window.confirm(`Excluir da Fila a linha ${nome}?\n\nEla NÃO vai para o Histórico.`)) return
+    const { error } = await prog().from('fila_linha').delete().eq('id', r.id)
+    if (error) setErro('Não foi possível excluir: ' + error.message)
+    await carregar()
+  }
+
   async function excluirManual(r) {
     if (!window.confirm(`Excluir a linha "${r.descricao}" (${fmtD(r.data_producao)})?`)) return
     const { error } = await prog().from('fila_linha').delete().eq('id', r.id)
@@ -339,7 +347,7 @@ export default function Fila({ perfil }) {
                     </Sortable>
                   )
                 }
-                return <LinhaOp key={it.r.id} r={it.r} ehController={ehController} podeOp={podeOp} salvar={salvar} />
+                return <LinhaOp key={it.r.id} r={it.r} ehController={ehController} podeOp={podeOp} salvar={salvar} excluir={excluirOp} />
               })}
             </SortableContext>
           </DndContext>
@@ -399,7 +407,7 @@ function DataCell({ r, editavel, onSave }) {
   )
 }
 
-export function LinhaOp({ r, ehController, podeOp, salvar }) {
+export function LinhaOp({ r, ehController, podeOp, salvar, excluir }) {
   const cores = Array.isArray(r.cores) ? r.cores : []
   const slot = (n) => cores.find((c) => Number(c.posicao) === n)
   const cliOk = r.cliche_disponivel !== false
@@ -417,7 +425,10 @@ export function LinhaOp({ r, ehController, podeOp, salvar }) {
             <TextEdit className="mono" value={r.op} placeholder="nº OP" label="Número da OP gerada no SAP" disabled={!ehController} onSave={(v) => salvar(r.id, { op: v })} />
           </div>
           <div className="c s3 mono" style={{ fontWeight: 600 }}>{r.material}</div>
-          <div className="c s4"><span className="clamp" title={nomeCli}>{nomeCli}</span></div>
+          <div className="c s4" style={excluir ? { justifyContent: 'space-between' } : undefined}>
+            <span className="clamp" title={nomeCli}>{nomeCli}</span>
+            {excluir && ehController && <button className="xbtn" style={{ color: '#B42318' }} title="Excluir OP da Fila" aria-label={'Excluir OP ' + (r.op || r.material)} onClick={() => excluir(r)}>×</button>}
+          </div>
           <div className="c mono">{r.sku_bobina ?? '—'}</div>
           <div className="c mono">{r.sku_cliche ?? '—'}</div>
           <div className="c edit">
