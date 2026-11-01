@@ -9,7 +9,7 @@ const ac = () => supabase.schema('acompanhamento')
 const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
 const fmtBR = (s) => (s ? s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4) : '—')
 const hhmm = (s) => (s ? String(s).slice(0, 5) : '—')
-const LIMITE = 600
+const PAGINA = 600
 const noop = () => {}
 
 export default function Historico() {
@@ -19,24 +19,28 @@ export default function Historico() {
   const [busca, setBusca] = useState('')
   const [linhas, setLinhas] = useState(null)
   const [erro, setErro] = useState(null)
+  const [qtd, setQtd] = useState(PAGINA)
 
   const carregar = useCallback(async () => {
     setLinhas(null); setErro(null)
     const out = []
     for (let ini = 0; ; ini += 1000) {
-      const { data, error } = await ac()
+      let q = ac()
         .from('fila_snapshot_linha')
         .select('id, ordem, tipo, dados, fila_snapshot!inner(data_ref, origem, criado_em)')
-        .gte('fila_snapshot.data_ref', de)
-        .lte('fila_snapshot.data_ref', ate)
+      if (de) q = q.gte('fila_snapshot.data_ref', de)
+      if (ate) q = q.lte('fila_snapshot.data_ref', ate)
+      const { data, error } = await q
         .order('id')
         .range(ini, ini + 999)
       if (error) { setErro(error.message); setLinhas([]); return }
       out.push(...data)
       if (data.length < 1000) break
     }
-    out.sort((a, b) => (a.fila_snapshot.data_ref < b.fila_snapshot.data_ref ? -1 : a.fila_snapshot.data_ref > b.fila_snapshot.data_ref ? 1 : a.ordem - b.ordem))
+    // dia mais recente em cima; dentro do dia, a ordem da fila
+    out.sort((a, b) => (a.fila_snapshot.data_ref < b.fila_snapshot.data_ref ? 1 : a.fila_snapshot.data_ref > b.fila_snapshot.data_ref ? -1 : a.ordem - b.ordem))
     setLinhas(out)
+    setQtd(PAGINA)
   }, [de, ate])
   useEffect(() => { carregar() }, [carregar])
 
@@ -51,7 +55,9 @@ export default function Historico() {
   }, [linhas, busca])
 
   const dias = useMemo(() => new Set(filtradas.map((l) => l.fila_snapshot.data_ref)).size, [filtradas])
-  const visiveis = filtradas.slice(0, LIMITE)
+  const visiveis = filtradas.slice(0, qtd)
+
+  useEffect(() => { setQtd(PAGINA) }, [busca])
 
   const itens = useMemo(() => {
     const out = []
@@ -98,7 +104,7 @@ export default function Historico() {
       const buf = await wb.xlsx.writeBuffer()
       const url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
       const a = document.createElement('a')
-      a.href = url; a.download = `historico_${de}_a_${ate}.xlsx`; a.click()
+      a.href = url; a.download = `historico_${de || 'inicio'}_a_${ate || 'hoje'}.xlsx`; a.click()
       URL.revokeObjectURL(url)
     } catch (e) { setErro('Não foi possível exportar: ' + e.message) }
     setExportando(false)
@@ -116,6 +122,7 @@ export default function Historico() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end' }}>
           <label className="fld">De<input type="date" value={de} onChange={(e) => setDe(e.target.value)} /></label>
           <label className="fld">Até<input type="date" value={ate} onChange={(e) => setAte(e.target.value)} /></label>
+          {(de || ate) && <button className="btn" title="Remove o filtro de datas e mostra todo o histórico" onClick={() => { setDe(''); setAte('') }}>Todas as datas</button>}
           <label className="fld">Buscar<input placeholder="OP, material, cliente, SKU…" style={{ width: 220 }} value={busca} onChange={(e) => setBusca(e.target.value)} /></label>
           <button className="btn" onClick={carregar}>Atualizar</button>
           <button className="btn" disabled={!filtradas.length || exportando} onClick={exportar}>{exportando ? 'Gerando…' : 'Exportar Excel'}</button>
@@ -125,7 +132,7 @@ export default function Historico() {
       {erro && <div className="msg err" role="alert">{erro} <button className="linkbtn" onClick={() => setErro(null)}>fechar</button></div>}
       {linhas && !erro && (
         <div style={{ fontSize: 13, color: '#3B4756' }}>
-          {filtradas.length} linha(s) em {dias} dia(s){filtradas.length > LIMITE ? ` — mostrando as primeiras ${LIMITE}; refine o período ou a busca (a exportação leva todas)` : ''}
+          {filtradas.length} linha(s) em {dias} dia(s){!de && !ate ? ' · todas as datas' : ''}{filtradas.length > qtd ? ` — mostrando as ${qtd} mais recentes (a exportação leva todas)` : ''}
         </div>
       )}
 
@@ -151,8 +158,9 @@ export default function Historico() {
               })}
             </SortableContext>
           </DndContext>
+          {filtradas.length > qtd && <div className="loading"><button className="btn" onClick={() => setQtd((n) => n + PAGINA)}>Mostrar mais {Math.min(PAGINA, filtradas.length - qtd)}</button></div>}
           {linhas === null && <div className="loading">Carregando…</div>}
-          {linhas && !filtradas.length && !erro && <div className="loading">Nenhum histórico salvo neste período.</div>}
+          {linhas && !filtradas.length && !erro && <div className="loading">{busca.trim() ? 'Nada encontrado para essa busca.' : 'Nenhum histórico salvo neste período.'}</div>}
         </div>
       </section>
     </>
