@@ -86,7 +86,8 @@ export default function Fila({ perfil }) {
   const [showNew, setShowNew] = useState(false)
   const [novo, setNovo] = useState({ data: '', ini: '', fim: '', desc: '' })
   const hoje = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
-  const [diaHist, setDiaHist] = useState(hoje)
+  const [showHist, setShowHist] = useState(false)
+  const [diasSel, setDiasSel] = useState([])
   const [okMsg, setOkMsg] = useState(null)
   const [salvandoHist, setSalvandoHist] = useState(false)
 
@@ -159,21 +160,30 @@ export default function Fila({ perfil }) {
     await carregar()
   }
 
+  // dias que existem na fila (OP e linhas manuais com Data Produção)
+  const diasFila = useMemo(() => {
+    const m = new Map()
+    ;(rows || []).forEach((r) => {
+      if ((r.tipo === 'op' || r.tipo === 'manual') && r.data_producao) m.set(r.data_producao, (m.get(r.data_producao) || 0) + 1)
+    })
+    return [...m.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([data, n]) => ({ data, n }))
+  }, [rows])
+  const totalSel = diasFila.filter((d) => diasSel.includes(d.data)).reduce((t, d) => t + d.n, 0)
+  const alternaDia = (d) => setDiasSel((s) => (s.includes(d) ? s.filter((x) => x !== d) : [...s, d]))
+
   async function salvarNoHistorico() {
-    if (!diaHist) return
+    const dias = diasFila.filter((d) => diasSel.includes(d.data)).map((d) => d.data)
+    if (!dias.length) return
     setErro(null); setOkMsg(null)
-    const ac = supabase.schema('acompanhamento')
-    const { data: ja } = await ac.from('fila_snapshot').select('id').eq('data_ref', diaHist).maybeSingle()
-    const dia = fmtD(diaHist) + '/' + diaHist.slice(0, 4)
-    const pergunta = ja
-      ? `Já existe histórico salvo para ${dia}. Substituir pelo planejado de agora?`
-      : `Salvar no Histórico o planejado de ${dia}? (as linhas da fila com Data Produção nesse dia)`
-    if (!window.confirm(pergunta)) return
+    const lista = dias.map((d) => fmtD(d) + '/' + d.slice(0, 4)).join(', ')
+    if (!window.confirm(`Salvar no Histórico e REMOVER da Fila ${totalSel} linha(s) de ${dias.length} dia(s)?\n\n${lista}`)) return
     setSalvandoHist(true)
-    const { data, error } = await ac.rpc('salvar_historico', { p_data: diaHist, p_observacao: null })
+    const { data, error } = await supabase.schema('acompanhamento').rpc('salvar_historico_dias', { p_dias: dias, p_observacao: null })
     setSalvandoHist(false)
     if (error) { setErro(error.message); return }
-    setOkMsg(`Histórico de ${dia} ${data.substituiu ? 'atualizado' : 'salvo'}: ${data.linhas} linha(s).`)
+    setOkMsg(`${data.dias.length} dia(s) salvos no Histórico; ${data.removidas_da_fila} linha(s) removidas da Fila.`)
+    setDiasSel([]); setShowHist(false)
+    carregar()
   }
 
   const resumo = useMemo(() => {
@@ -230,17 +240,41 @@ export default function Fila({ perfil }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <button className="btn" onClick={carregar}>Atualizar</button>
           {ehController && <button className="btn" onClick={() => setShowNew(!showNew)}>+ Linha manual</button>}
-          {ehController && (
-            <>
-              <input type="date" className="btn" aria-label="Dia do histórico" title="Dia de produção a salvar" value={diaHist} onChange={(e) => setDiaHist(e.target.value)} style={{ minHeight: 44 }} />
-              <button className="btn primary" disabled={salvandoHist || !diaHist} onClick={salvarNoHistorico} title="Guarda o planejado do dia no Histórico">{salvandoHist ? 'Salvando…' : 'Salvar no Histórico'}</button>
-            </>
-          )}
+          {ehController && <button className="btn primary" aria-expanded={showHist} onClick={() => setShowHist(!showHist)} title="Escolher os dias que vão para o Histórico e saem da Fila">Salvar no Histórico</button>}
         </div>
       </header>
 
       {erro && <div className="msg err" role="alert">{erro} <button className="linkbtn" onClick={() => setErro(null)}>fechar</button></div>}
       {okMsg && <div className="msg ok" role="status">{okMsg} <button className="linkbtn" onClick={() => setOkMsg(null)}>fechar</button></div>}
+
+      {ehController && showHist && (
+        <section aria-label="Salvar no Histórico" style={{ background: '#fff', border: '1px solid #DDE1E7', borderRadius: 10, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div>
+            <strong>Quais dias vão para o Histórico?</strong>
+            <div style={{ fontSize: 13, color: '#5A6675' }}>As linhas dos dias marcados são guardadas no Histórico e saem da Fila.</div>
+          </div>
+          {!diasFila.length ? <div style={{ fontSize: 13 }}>Não há dias com Data Produção na Fila.</div> : (
+            <>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {diasFila.map((d) => (
+                  <label key={d.data} style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1px solid ' + (diasSel.includes(d.data) ? '#2F6FDB' : '#C9CFD8'), background: diasSel.includes(d.data) ? '#EAF1FD' : '#fff', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 13 }}>
+                    <input type="checkbox" checked={diasSel.includes(d.data)} onChange={() => alternaDia(d.data)} />
+                    <span><strong>{weekday(d.data)} {fmtD(d.data)}</strong> · {d.n} linha(s){d.data === hoje ? ' · hoje' : ''}</span>
+                  </label>
+                ))}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                <button type="button" className="btn" onClick={() => setDiasSel(diasFila.filter((d) => d.data <= hoje).map((d) => d.data))}>Marcar até hoje</button>
+                <button type="button" className="btn" onClick={() => setDiasSel([])} disabled={!diasSel.length}>Limpar</button>
+                <button type="button" className="btn primary" disabled={salvandoHist || !diasSel.length} onClick={salvarNoHistorico}>
+                  {salvandoHist ? 'Salvando…' : diasSel.length ? `Salvar ${diasSel.length} dia(s) e remover da Fila (${totalSel} linhas)` : 'Marque os dias'}
+                </button>
+                <button type="button" className="btn" onClick={() => setShowHist(false)}>Fechar</button>
+              </div>
+            </>
+          )}
+        </section>
+      )}
 
       {showNew && (
         <form onSubmit={inserirManual} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', background: '#fff', border: '1px solid #DDE1E7', borderRadius: 10, padding: '12px 16px' }}>
