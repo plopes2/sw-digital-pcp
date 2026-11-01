@@ -133,3 +133,8 @@ html,body,#root{height:100%}
 .tb{width:100%;border-collapse:collapse;font-size:12.5px}
 .tb th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.3px;color:#3B4756;padding:6px 8px;border-bottom:1px solid #DDE1E7}
 .tb td{padding:6px 8px;border-bottom:1px solid #EDF0F4;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+button.navfoot{border:0;border-top:1px solid #E7EAEF;background:none;font:inherit;width:100%;cursor:pointer;color:inherit;border-radius:0}
+button.navfoot:hover .avatar{box-shadow:0 0 0 2px #1F5FBF}
+.contabg{position:fixed;inset:0;z-index:38}
+.conta{position:fixed;left:64px;bottom:14px;z-index:40;width:260px;background:#fff;border:1px solid #DDE1E7;border-radius:12px;box-shadow:0 8px 28px rgba(27,36,48,.2);padding:14px;display:flex;flex-direction:column;gap:10px}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { supabase } from './supabase.js'
 import Fila from './Fila.jsx'
 import Dados from './Dados.jsx'
@@ -20,6 +20,13 @@ const PERFIL = { controller: 'Controller', operacao: 'Operação', consultor: 'C
 
 export default function Shell({ session, usuario }) {
   const [pagina, setPagina] = useState('Fila')
+  const [conta, setConta] = useState(false)
+  useEffect(() => {
+    if (!conta) return
+    const fechar = (e) => { if (e.key === 'Escape') setConta(false) }
+    window.addEventListener('keydown', fechar)
+    return () => window.removeEventListener('keydown', fechar)
+  }, [conta])
   const disponiveis = { Fila: true, Dados: true, Histórico: true, 'Usuários e logs': usuario.perfil === 'controller' }
   const nome = usuario.nome || usuario.nome_completo || session.user.email
   return (
@@ -39,16 +46,32 @@ export default function Shell({ session, usuario }) {
               <span className="navlbl">{m}</span>
             </button>
           ))}
-          <div className="navfoot">
+          <button className="navfoot" aria-haspopup="dialog" aria-expanded={conta} title={`${nome} — clique para trocar de conta ou sair`} onClick={() => setConta((v) => !v)}>
             <span className="avatar">{String(nome)[0]?.toUpperCase()}</span>
-            <span className="navlbl">
+            <span className="navlbl" style={{ textAlign: 'left' }}>
               <span style={{ display: 'block', fontSize: 13, fontWeight: 500, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>{nome}</span>
               <span style={{ display: 'block', fontSize: 12, color: '#5A6675' }}>Perfil: {PERFIL[usuario.perfil] ?? usuario.perfil}</span>
-              <button className="linkbtn" onClick={() => supabase.auth.signOut()}>Sair</button>
             </span>
-          </div>
+          </button>
         </nav>
       </div>
+      {conta && (
+        <>
+          <div className="contabg" onClick={() => setConta(false)} />
+          <div className="conta" role="dialog" aria-label="Conta">
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <span className="avatar" style={{ width: 36, height: 36, fontSize: 14 }}>{String(nome)[0]?.toUpperCase()}</span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>{nome}</div>
+                <div style={{ fontSize: 12, color: '#5A6675', overflow: 'hidden', textOverflow: 'ellipsis' }}>{session.user.email}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: '#3B4756' }}>Perfil: <strong>{PERFIL[usuario.perfil] ?? usuario.perfil}</strong></div>
+            <button className="btn" onClick={() => supabase.auth.signOut()}>Trocar de conta</button>
+            <button className="btn" onClick={() => supabase.auth.signOut()}>Sair</button>
+          </div>
+        </>
+      )}
       <main className="main">
         {pagina === 'Dados' ? <Dados perfil={usuario.perfil} /> : pagina === 'Histórico' ? <Historico /> : pagina === 'Usuários e logs' ? <UsuariosLogs perfil={usuario.perfil} meuId={session.user.id} /> : <Fila perfil={usuario.perfil} />}
       </main>
