@@ -139,5 +139,8 @@ button.navfoot:hover .avatar{box-shadow:0 0 0 2px #1F5FBF}
 .contabg{position:fixed;inset:0;z-index:38}
 .conta{position:fixed;left:64px;bottom:14px;z-index:40;width:260px;background:#fff;border:1px solid #DDE1E7;border-radius:12px;box-shadow:0 8px 28px rgba(27,36,48,.2);padding:14px;display:flex;flex-direction:column;gap:10px}
 .navlink{position:relative}
-.dot{position:absolute;top:7px;left:26px;width:10px;height:10px;border-radius:50%;background:#D92D20;box-shadow:0 0 0 2px #fff}
+.dot{width:10px;height:10px;border-radius:50%;background:#F5B301;box-shadow:0 0 0 2px #fff;flex:none}
+.dot-icone{position:absolute;top:7px;left:26px}
+.dot-lado{margin-left:auto}
+.rail:hover .dot-icone,.rail:focus-within .dot-icone{display:none}
 .navlink.on .dot{box-shadow:0 0 0 2px #1F5FBF}

@@ -29,8 +29,9 @@ export default function Shell({ session, usuario }) {
     const ler = () => acesso().from('usuario').select('id', { count: 'exact', head: true }).eq('status', 'pendente')
       .then(({ count, error }) => { if (vivo && !error) setPendentes(count ?? 0) })
     ler()
-    const t = setInterval(ler, 60000)
-    return () => { vivo = false; clearInterval(t) }
+    const t = setInterval(ler, 20000)
+    window.addEventListener('focus', ler)
+    return () => { vivo = false; clearInterval(t); window.removeEventListener('focus', ler) }
   }, [ehController])
   useEffect(() => {
     if (!conta) return
@@ -55,7 +56,12 @@ export default function Shell({ session, usuario }) {
             <button key={m} className={'navlink' + (m === pagina ? ' on' : '')} disabled={!disponiveis[m]} title={disponiveis[m] ? '' : m === 'Usuários e logs' ? 'Somente Controller' : 'Em breve'} onClick={() => setPagina(m)}>
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={ICONS[m]} /></svg>
               <span className="navlbl">{m}</span>
-              {m === 'Usuários e logs' && pendentes > 0 && <span className="dot" role="status" aria-label={`${pendentes} aprovação(ões) pendente(s)`} title={`${pendentes} aprovação(ões) pendente(s)`} />}
+              {m === 'Usuários e logs' && pendentes > 0 && (
+                <>
+                  <span className="dot dot-icone" role="status" aria-label={`${pendentes} aprovação(ões) pendente(s)`} title={`${pendentes} aprovação(ões) pendente(s)`} />
+                  <span className="dot dot-lado navlbl" title={`${pendentes} aprovação(ões) pendente(s)`} />
+                </>
+              )}
             </button>
           ))}
           <button className="navfoot" aria-haspopup="dialog" aria-expanded={conta} title={`${nome} — clique para trocar de conta ou sair`} onClick={() => setConta((v) => !v)}>
