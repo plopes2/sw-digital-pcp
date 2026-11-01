@@ -3,6 +3,7 @@ import { supabase } from './supabase.js'
 import Fila from './Fila.jsx'
 import Dados from './Dados.jsx'
 import Historico from './Historico.jsx'
+import UsuariosLogs from './UsuariosLogs.jsx'
 
 const ICONS = {
   Painel: 'M3 3h6v6H3zM11 3h6v6h-6zM3 11h6v6H3zM11 11h6v6h-6z',
@@ -19,7 +20,7 @@ const PERFIL = { controller: 'Controller', operacao: 'Operação', consultor: 'C
 
 export default function Shell({ session, usuario }) {
   const [pagina, setPagina] = useState('Fila')
-  const disponiveis = { Fila: true, Dados: true, Histórico: true }
+  const disponiveis = { Fila: true, Dados: true, Histórico: true, 'Usuários e logs': usuario.perfil === 'controller' }
   const nome = usuario.nome || usuario.nome_completo || session.user.email
   return (
     <div className="app">
@@ -33,7 +34,7 @@ export default function Shell({ session, usuario }) {
             </span>
           </div>
           {MENU.map((m) => (
-            <button key={m} className={'navlink' + (m === pagina ? ' on' : '')} disabled={!disponiveis[m]} title={disponiveis[m] ? '' : 'Em breve'} onClick={() => setPagina(m)}>
+            <button key={m} className={'navlink' + (m === pagina ? ' on' : '')} disabled={!disponiveis[m]} title={disponiveis[m] ? '' : m === 'Usuários e logs' ? 'Somente Controller' : 'Em breve'} onClick={() => setPagina(m)}>
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={ICONS[m]} /></svg>
               <span className="navlbl">{m}</span>
             </button>
@@ -49,7 +50,7 @@ export default function Shell({ session, usuario }) {
         </nav>
       </div>
       <main className="main">
-        {pagina === 'Dados' ? <Dados perfil={usuario.perfil} /> : pagina === 'Histórico' ? <Historico /> : <Fila perfil={usuario.perfil} />}
+        {pagina === 'Dados' ? <Dados perfil={usuario.perfil} /> : pagina === 'Histórico' ? <Historico /> : pagina === 'Usuários e logs' ? <UsuariosLogs perfil={usuario.perfil} meuId={session.user.id} /> : <Fila perfil={usuario.perfil} />}
       </main>
     </div>
   )
