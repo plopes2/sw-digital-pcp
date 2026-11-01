@@ -410,7 +410,8 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir }) {
   const faltaPapel = r.status_papel === 'FALTA PAPEL'
   const mfull = r.montagem != null && r.montagem === r.qtde_cores
   const rupCls = r.data_ruptura ? (r.ruptura_alinhada ? 'rb' : 'rg') : ''
-  const nomeCli = String(r.cliente ?? '').replace(/\s+/g, ' ')
+  // descrição completa do material (Rótulo da aba DADOS); só cai para a empresa se não houver
+  const nomeCli = String(r.material_descricao ?? r.rotulo ?? r.cliente ?? '').replace(/\s+/g, ' ')
 
   return (
     <Sortable id={r.id} disabled={!ehController} className="g orow">
@@ -424,7 +425,7 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir }) {
             {excluir && ehController && <button className="xbtn" style={{ color: '#B42318', padding: '0 3px 0 0' }} title="Excluir OP da Fila" aria-label={'Excluir OP ' + (r.op || r.material)} onClick={() => excluir(r)}>×</button>}
             {r.material}
           </div>
-          <div className="c s4"><span className="clamp" title={nomeCli}>{nomeCli}</span></div>
+          <div className="c s4"><span title={nomeCli}>{nomeCli}</span></div>
           <div className="c mono">{r.sku_bobina ?? '—'}</div>
           <div className="c mono">{r.sku_cliche ?? '—'}</div>
           <div className="c edit">

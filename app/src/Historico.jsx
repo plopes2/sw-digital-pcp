@@ -50,7 +50,7 @@ export default function Historico() {
     if (!q) return linhas
     return linhas.filter((l) => {
       const d = l.dados
-      return [d.op, d.material, d.rotulo, d.cliente, d.sku_cliche, d.sku_bobina, d.descricao, d.observacoes].some((x) => x && String(x).toLowerCase().includes(q))
+      return [d.op, d.material, d.material_descricao, d.rotulo, d.cliente, d.sku_cliche, d.sku_bobina, d.descricao, d.observacoes].some((x) => x && String(x).toLowerCase().includes(q))
     })
   }, [linhas, busca])
 
@@ -71,7 +71,7 @@ export default function Historico() {
         out.push({ k: 'dia', label: WD[new Date(y, m - 1, d).getDay()] + ' ' + fmtBR(dia), sub: `${n} linha(s) · ${l.fila_snapshot.origem === 'retroativo' ? 'carga retroativa' : 'salvo em ' + new Date(l.fila_snapshot.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}` })
       }
       const d = l.dados
-      out.push({ k: l.tipo === 'manual' ? 'manual' : 'op', id: l.id, r: { ...d, id: l.id, cliente: d.cliente ?? d.rotulo } })
+      out.push({ k: l.tipo === 'manual' ? 'manual' : 'op', id: l.id, r: { ...d, id: l.id } })
     })
     return out
   }, [visiveis, filtradas])
@@ -91,7 +91,7 @@ export default function Historico() {
         const d = l.dados
         const cores = Array.isArray(d.cores) ? d.cores : []
         const row = [
-          d.data_producao, d.tipo === 'manual' ? null : d.op, d.material, d.tipo === 'manual' ? d.descricao : (d.cliente ?? d.rotulo), d.sku_bobina, d.sku_cliche,
+          d.data_producao, d.tipo === 'manual' ? null : d.op, d.material, d.tipo === 'manual' ? d.descricao : (d.material_descricao ?? d.rotulo ?? d.cliente), d.sku_bobina, d.sku_cliche,
           d.cliche_chegada, d.tipo === 'manual' ? null : (d.cliche_disponivel ? 'sim' : 'não'), hhmm(d.inicio) === '—' ? null : hhmm(d.inicio), hhmm(d.fim) === '—' ? null : hhmm(d.fim), d.tempo_h,
           d.data_ruptura, d.data_ruptura ? (d.ruptura_alinhada ? 'sim' : 'não') : null, d.observacoes, d.m_minima, d.volume_m2, d.bobinas,
           d.papel_codigo, d.status_papel, d.papel_tipo, d.papel_fornecedor, d.camisa, d.adaptador, d.qtde_cores, d.montagem, d.faca_item_novo ? 'X' : null, d.pit_stop || null,
