@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './supabase.js'
 import { TIPOS, ORDEM_TIPOS, lerArquivo } from './importacao.js'
+import { lerHistorico, blocos } from './historico.js'
 
 const fmtDH = (s) => (s ? new Date(s).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—')
 const entrada = () => supabase.schema('entrada')
@@ -71,6 +72,8 @@ export default function Dados({ perfil }) {
           <CartaoUpload key={t} tipo={t} vigente={(cargas || []).find((c) => c.tipo === t && c.vigente)} habilitado={ehController} onEnviado={carregar} />
         ))}
       </div>
+
+      <CartaoHistorico habilitado={ehController} />
 
       <section className="card">
         <h2>Histórico de envios</h2>
@@ -197,4 +200,98 @@ function Avisos({ av }) {
   if (av.papeis_sem_cadastro?.length) itens.push(`${av.papeis_sem_cadastro.length} código(s) de papel sem cadastro: ${av.papeis_sem_cadastro.slice(0, 8).join(', ')}`)
   if (!itens.length) return null
   return <ul>{itens.map((i, k) => <li key={k}>{i}</li>)}</ul>
+}
+
+const TXT_AVISOS = {
+  status_papel_fora_do_padrao: (n) => `${n} linha(s) com Status Papel fora do padrão (ex.: EMPRÉSTIMO, analisar) ficam sem status.`,
+  ruptura_texto_ignorado: (n) => `${n} linha(s) com texto no lugar da data de ruptura ficam sem data.`,
+  data_fora_de_sequencia: (n) => `${n} linha(s) com Data Produção fora da sequência foram mantidas como estão — vale conferir.`,
+  cores_8_9_lidas_da_posicao_deslocada: (n) => `${n} linha(s) a partir de 17/09/2026 tinham as cores 8 e 9 deslocadas na planilha; foram lidas na posição certa.`,
+  ruptura_vermelha: (n) => `${n} data(s) de ruptura em fonte vermelha foram tratadas como preto (alinhada).`,
+  cor_ruptura_desconhecida: (n) => `${n} data(s) de ruptura com cor de fonte desconhecida foram tratadas como preto (alinhada).`,
+}
+
+function CartaoHistorico({ habilitado }) {
+  const input = useRef(null)
+  const [st, setSt] = useState({ fase: 'vazio' }) // vazio | lendo | pronto | enviando | ok | falha
+
+  async function escolher(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setSt({ fase: 'lendo', nome: file.name })
+    try {
+      const res = await lerHistorico(await file.arrayBuffer())
+      setSt({ fase: 'pronto', nome: file.name, res })
+    } catch (err) {
+      setSt({ fase: 'falha', nome: file.name, msg: err.message })
+    }
+  }
+
+  async function enviar() {
+    const { nome, res } = st
+    const lotes = blocos(res.linhas)
+    let dias = 0, linhas = 0
+    const pulados = new Set()
+    for (let i = 0; i < lotes.length; i++) {
+      setSt({ fase: 'enviando', nome, res, prog: `${i + 1} de ${lotes.length}` })
+      const { data, error } = await supabase.schema('acompanhamento').rpc('importar_historico', { p_nome_arquivo: nome, p_linhas: lotes[i] })
+      if (error) { setSt({ fase: 'falha', nome, msg: `Parou no bloco ${i + 1} de ${lotes.length}: ${error.message}. Os blocos anteriores já foram gravados; é seguro enviar o arquivo de novo.` }); return }
+      dias += data.dias; linhas += data.linhas
+      ;(data.dias_ja_salvos_pelo_app || []).forEach((d) => pulados.add(d))
+    }
+    setSt({ fase: 'ok', nome, dias, linhas, pulados: [...pulados] })
+  }
+
+  const pronto = st.fase === 'pronto'
+  const res = st.res
+  return (
+    <section className="card">
+      <h2>Carga do histórico (planilha antiga)</h2>
+      <div className="sub">Planilha "Histórico Programação Preprint" (DOC-POR-SWRI-AGP-006). Entram só as colunas que existem na Fila; Realizado, Data Retirada Real e Plano Aderência não são carregados. Pode ser enviada de novo: substitui apenas o que veio desta carga.</div>
+
+      {habilitado && ['vazio', 'ok', 'falha'].includes(st.fase) && (
+        <>
+          <input ref={input} type="file" accept=".xlsx" hidden onChange={escolher} />
+          <button className="btn" style={{ alignSelf: 'flex-start' }} onClick={() => input.current.click()}>Escolher planilha do histórico (.xlsx)</button>
+        </>
+      )}
+      {!habilitado && <div className="sub">Somente o Controller pode carregar o histórico.</div>}
+
+      {st.fase === 'lendo' && <div className="loading" style={{ padding: 8 }}>Lendo {st.nome}… (pode levar alguns segundos)</div>}
+      {st.fase === 'falha' && <div className="msg err">{st.msg}</div>}
+
+      {pronto && (
+        <div className="prev">
+          <div><strong>{st.nome}</strong> · aba "{res.aba}"</div>
+          {res.linhas.length > 0 && <div className="msg ok">{res.resumo}</div>}
+          {Object.entries(res.avisos).map(([k, n]) => TXT_AVISOS[k] && <div key={k} className="msg warnmsg">{TXT_AVISOS[k](n)}</div>)}
+          {res.correcoes.length > 0 && (
+            <details>
+              <summary>{res.correcoes.length} data(s) corrigida(s) ou para conferir</summary>
+              <ul className="msg warnmsg">{res.correcoes.map((c, i) => <li key={i}>linha {c.linha}: {c.de === c.para ? c.de + ' (mantida, fora da sequência: conferir)' : c.de + ' → ' + c.para}</li>)}</ul>
+            </details>
+          )}
+          {res.erros.length > 0 && (
+            <div className="msg err">
+              {res.erros.length} linha(s) com problema — corrija a planilha e envie de novo:
+              <ul>{res.erros.slice(0, 8).map((e, i) => <li key={i}>linha {e.linha}: {e.msg}</li>)}</ul>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button className="btn primary" disabled={res.erros.length > 0 || res.linhas.length === 0} onClick={enviar}>Carregar no Histórico</button>
+            <button className="btn" onClick={() => setSt({ fase: 'vazio' })}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {st.fase === 'enviando' && <div className="loading" style={{ padding: 8 }}>Gravando bloco {st.prog}…</div>}
+      {st.fase === 'ok' && (
+        <div className="msg ok">
+          Histórico carregado: {st.linhas} linhas em {st.dias} dias.
+          {st.pulados.length > 0 && <div>Dias já salvos pelo botão da Fila foram mantidos: {st.pulados.join(', ')}.</div>}
+        </div>
+      )}
+    </section>
+  )
 }

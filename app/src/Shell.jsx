@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { supabase } from './supabase.js'
 import Fila from './Fila.jsx'
 import Dados from './Dados.jsx'
+import Historico from './Historico.jsx'
 
 const ICONS = {
   Painel: 'M3 3h6v6H3zM11 3h6v6h-6zM3 11h6v6H3zM11 11h6v6h-6z',
@@ -18,7 +19,7 @@ const PERFIL = { controller: 'Controller', operacao: 'Operação', consultor: 'C
 
 export default function Shell({ session, usuario }) {
   const [pagina, setPagina] = useState('Fila')
-  const disponiveis = { Fila: true, Dados: true }
+  const disponiveis = { Fila: true, Dados: true, Histórico: true }
   const nome = usuario.nome || usuario.nome_completo || session.user.email
   return (
     <div className="app">
@@ -48,7 +49,7 @@ export default function Shell({ session, usuario }) {
         </nav>
       </div>
       <main className="main">
-        {pagina === 'Dados' ? <Dados perfil={usuario.perfil} /> : <Fila perfil={usuario.perfil} />}
+        {pagina === 'Dados' ? <Dados perfil={usuario.perfil} /> : pagina === 'Histórico' ? <Historico /> : <Fila perfil={usuario.perfil} />}
       </main>
     </div>
   )

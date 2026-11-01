@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { DndContext, PointerSensor, KeyboardSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { prog } from './supabase.js'
+import { supabase, prog } from './supabase.js'
 
 const WD = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
@@ -85,6 +85,10 @@ export default function Fila({ perfil }) {
   const [erro, setErro] = useState(null)
   const [showNew, setShowNew] = useState(false)
   const [novo, setNovo] = useState({ data: '', ini: '', fim: '', desc: '' })
+  const hoje = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+  const [diaHist, setDiaHist] = useState(hoje)
+  const [okMsg, setOkMsg] = useState(null)
+  const [salvandoHist, setSalvandoHist] = useState(false)
 
   const carregar = useCallback(async () => {
     const [f, o] = await Promise.all([
@@ -155,6 +159,23 @@ export default function Fila({ perfil }) {
     await carregar()
   }
 
+  async function salvarNoHistorico() {
+    if (!diaHist) return
+    setErro(null); setOkMsg(null)
+    const ac = supabase.schema('acompanhamento')
+    const { data: ja } = await ac.from('fila_snapshot').select('id').eq('data_ref', diaHist).maybeSingle()
+    const dia = fmtD(diaHist) + '/' + diaHist.slice(0, 4)
+    const pergunta = ja
+      ? `Já existe histórico salvo para ${dia}. Substituir pelo planejado de agora?`
+      : `Salvar no Histórico o planejado de ${dia}? (as linhas da fila com Data Produção nesse dia)`
+    if (!window.confirm(pergunta)) return
+    setSalvandoHist(true)
+    const { data, error } = await ac.rpc('salvar_historico', { p_data: diaHist, p_observacao: null })
+    setSalvandoHist(false)
+    if (error) { setErro(error.message); return }
+    setOkMsg(`Histórico de ${dia} ${data.substituiu ? 'atualizado' : 'salvo'}: ${data.linhas} linha(s).`)
+  }
+
   const resumo = useMemo(() => {
     if (!rows) return ''
     const ops = rows.filter((r) => r.tipo === 'op')
@@ -209,11 +230,17 @@ export default function Fila({ perfil }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <button className="btn" onClick={carregar}>Atualizar</button>
           {ehController && <button className="btn" onClick={() => setShowNew(!showNew)}>+ Linha manual</button>}
-          <button className="btn primary" disabled title="Disponível na próxima etapa">Salvar no Histórico</button>
+          {ehController && (
+            <>
+              <input type="date" className="btn" aria-label="Dia do histórico" title="Dia de produção a salvar" value={diaHist} onChange={(e) => setDiaHist(e.target.value)} style={{ minHeight: 44 }} />
+              <button className="btn primary" disabled={salvandoHist || !diaHist} onClick={salvarNoHistorico} title="Guarda o planejado do dia no Histórico">{salvandoHist ? 'Salvando…' : 'Salvar no Histórico'}</button>
+            </>
+          )}
         </div>
       </header>
 
       {erro && <div className="msg err" role="alert">{erro} <button className="linkbtn" onClick={() => setErro(null)}>fechar</button></div>}
+      {okMsg && <div className="msg ok" role="status">{okMsg} <button className="linkbtn" onClick={() => setOkMsg(null)}>fechar</button></div>}
 
       {showNew && (
         <form onSubmit={inserirManual} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', background: '#fff', border: '1px solid #DDE1E7', borderRadius: 10, padding: '12px 16px' }}>
@@ -237,25 +264,7 @@ export default function Fila({ perfil }) {
 
       <section className="scroller" role="region" aria-label="Fila de produção" tabIndex={0}>
         <div className="tbl">
-          <div className="g band" role="row">
-            <div className="c sp7"><span style={{ position: 'sticky', left: 8 }}>Identificação</span></div>
-            <div className="c sp5">Programação</div>
-            <div className="c sp3">Quantidade</div>
-            <div className="c sp3">Papel</div>
-            <div className="c sp6">Ferramental e montagem</div>
-            <div className="c sp9">Cores e anilox</div>
-          </div>
-          <div className="g hdr" role="row">
-            <div className="c s1" />
-            <div className="c s2">OP</div>
-            <div className="c s3">Material</div>
-            <div className="c s4">Cliente</div>
-            {['SKU bobina', 'SKU clichê', 'Clichê', 'Data prod.', 'Início', 'Fim', 'Data ruptura', 'Observações'].map((h) => <div key={h} className="c">{h}</div>)}
-            <div className="c" style={{ justifyContent: 'flex-end', textAlign: 'right' }}>M. Linear mínima</div>
-            <div className="c" style={{ justifyContent: 'flex-end' }}>Vol. M²</div>
-            {['Bob.', 'Papel', 'Status papel', 'Tipo · fornecedor', 'Camisa', 'Adapt.', 'Cores', 'Montagem', 'Faca / novo', 'Pit stop'].map((h) => <div key={h} className="c">{h}</div>)}
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => <div key={n} className="c">Cor {n} · anilox</div>)}
-          </div>
+          <CabecalhoFila />
 
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={aoSoltar}>
             <SortableContext items={(rows || []).map((r) => r.id)} strategy={verticalListSortingStrategy}>
@@ -311,6 +320,32 @@ export default function Fila({ perfil }) {
   )
 }
 
+export function CabecalhoFila() {
+  return (
+    <>
+          <div className="g band" role="row">
+            <div className="c sp7"><span style={{ position: 'sticky', left: 8 }}>Identificação</span></div>
+            <div className="c sp5">Programação</div>
+            <div className="c sp3">Quantidade</div>
+            <div className="c sp3">Papel</div>
+            <div className="c sp6">Ferramental e montagem</div>
+            <div className="c sp9">Cores e anilox</div>
+          </div>
+          <div className="g hdr" role="row">
+            <div className="c s1" />
+            <div className="c s2">OP</div>
+            <div className="c s3">Material</div>
+            <div className="c s4">Cliente</div>
+            {['SKU bobina', 'SKU clichê', 'Clichê', 'Data prod.', 'Início', 'Fim', 'Data ruptura', 'Observações'].map((h) => <div key={h} className="c">{h}</div>)}
+            <div className="c" style={{ justifyContent: 'flex-end', textAlign: 'right' }}>M. Linear mínima</div>
+            <div className="c" style={{ justifyContent: 'flex-end' }}>Vol. M²</div>
+            {['Bob.', 'Papel', 'Status papel', 'Tipo · fornecedor', 'Camisa', 'Adapt.', 'Cores', 'Montagem', 'Faca / novo', 'Pit stop'].map((h) => <div key={h} className="c">{h}</div>)}
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => <div key={n} className="c">Cor {n} · anilox</div>)}
+          </div>
+    </>
+  )
+}
+
 function DataCell({ r, editavel, onSave }) {
   const ref = React.useRef(null)
   const tip = r.atrasado ? 'Produção depois da ruptura real (' + fmtD(r.ruptura_real) + ')' : ''
@@ -330,7 +365,7 @@ function DataCell({ r, editavel, onSave }) {
   )
 }
 
-function LinhaOp({ r, ehController, podeOp, salvar }) {
+export function LinhaOp({ r, ehController, podeOp, salvar }) {
   const cores = Array.isArray(r.cores) ? r.cores : []
   const slot = (n) => cores.find((c) => Number(c.posicao) === n)
   const cliOk = r.cliche_disponivel !== false
