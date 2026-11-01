@@ -354,10 +354,6 @@ export default function Fila({ perfil }) {
           {rows && rows.length === 0 && <div className="loading">A fila está vazia.</div>}
         </div>
       </section>
-
-      <p style={{ margin: 0, fontSize: 12, color: '#5A6675', lineHeight: 1.5 }}>
-        Horários, ocupação, status de papel e atrasos são calculados pelo banco a cada alteração. Ao arrastar um item para outro dia, ele assume a data de produção da linha vizinha. Montagem, Faca/Item novo e Pit stop são editados pela Operação; OP, observações e datas, pela Controller.
-      </p>
     </>
   )
 }

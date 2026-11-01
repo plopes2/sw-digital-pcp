@@ -19,7 +19,7 @@ a{color:#1F5FBF}a:hover{color:#174A96}
 .avatar{flex:none;width:28px;height:28px;border-radius:50%;background:#E3ECFA;color:#173F85;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
 .navlink:hover{background:#EEF1F5;color:#1B2430}
 .navlink.on{background:#1F5FBF;color:#FFFFFF;font-weight:600}
-.scroller{overflow:auto;max-height:calc(100vh - 230px);border:1px solid #DDE1E7;border-radius:10px;background:#FFFFFF;position:relative}
+.scroller{overflow:auto;max-height:calc(100vh - 190px);border:1px solid #DDE1E7;border-radius:10px;background:#FFFFFF;position:relative}
 .tbl{min-width:2740px}
 .g{display:grid;grid-template-columns:24px 72px 72px 210px 80px 80px 64px 62px 58px 50px 64px 170px 70px 64px 48px 100px 88px 124px 64px 64px 60px 84px 60px 44px repeat(9,96px);min-width:2740px}
 .c{padding:5px 8px;font-size:12px;line-height:1.25;border-bottom:1px solid #EDF0F4;display:flex;align-items:center;min-width:0;box-sizing:border-box;background:inherit}
