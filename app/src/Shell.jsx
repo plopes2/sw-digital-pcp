@@ -3,6 +3,7 @@ import { supabase, acesso } from './supabase.js'
 import Fila from './Fila.jsx'
 import Dados from './Dados.jsx'
 import Historico from './Historico.jsx'
+import Cadastros from './Cadastros.jsx'
 import AnalisePCP from './AnalisePCP.jsx'
 import UsuariosLogs from './UsuariosLogs.jsx'
 
@@ -12,11 +13,11 @@ const ICONS = {
   Fila: 'M7 5h10M7 10h10M7 15h10M3.6 5h.1M3.6 10h.1M3.6 15h.1',
   Supply: 'M3 6.5L10 3l7 3.5v7L10 17l-7-3.5zM3 6.5L10 10l7-3.5M10 10v7',
   Dados: 'M4 5c0-1.3 2.7-2.4 6-2.4s6 1.1 6 2.4-2.7 2.4-6 2.4S4 6.3 4 5zM4 5v10c0 1.3 2.7 2.4 6 2.4s6-1.1 6-2.4V5',
-  Histórico: 'M10 3a7 7 0 100 14 7 7 0 000-14zM10 6v4.2l2.8 1.8',
+  Cadastros: 'M4 3.5h9a1.5 1.5 0 011.5 1.5v11.5H5.5A1.5 1.5 0 014 15zM7 7h5M7 10h5M14.5 6H16v10.5 7 0 100 14 7 7 0 000-14zM10 6v4.2l2.8 1.8',
   Consultar: 'M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM13.2 13.2L17 17',
   'Usuários e logs': 'M7.5 4a3 3 0 100 6 3 3 0 000-6zM2 16.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5',
 }
-const MENU = ['Painel', 'Análise PCP', 'Fila', 'Supply', 'Dados', 'Histórico', 'Consultar', 'Usuários e logs']
+const MENU = ['Painel', 'Análise PCP', 'Fila', 'Supply', 'Dados', 'Cadastros', 'Histórico', 'Consultar', 'Usuários e logs']
 const PERFIL = { controller: 'Controller', operacao: 'Operação', consultor: 'Consultor' }
 
 export default function Shell({ session, usuario }) {
@@ -40,7 +41,7 @@ export default function Shell({ session, usuario }) {
     window.addEventListener('keydown', fechar)
     return () => window.removeEventListener('keydown', fechar)
   }, [conta])
-  const disponiveis = { 'Análise PCP': usuario.perfil === 'controller', Fila: true, Dados: true, Histórico: true, 'Usuários e logs': usuario.perfil === 'controller' }
+  const disponiveis = { 'Análise PCP': usuario.perfil === 'controller', Fila: true, Dados: true, Cadastros: true, Histórico: true, 'Usuários e logs': usuario.perfil === 'controller' }
   const nome = usuario.nome || usuario.nome_completo || session.user.email
   return (
     <div className="app">
@@ -92,7 +93,7 @@ export default function Shell({ session, usuario }) {
         </>
       )}
       <main className="main">
-        {pagina === 'Dados' ? <Dados perfil={usuario.perfil} /> : pagina === 'Análise PCP' ? <AnalisePCP perfil={usuario.perfil} /> : pagina === 'Histórico' ? <Historico perfil={usuario.perfil} /> : pagina === 'Usuários e logs' ? <UsuariosLogs perfil={usuario.perfil} meuId={session.user.id} aoMudarPendentes={setPendentes} /> : <Fila perfil={usuario.perfil} />}
+        {pagina === 'Dados' ? <Dados perfil={usuario.perfil} /> : pagina === 'Análise PCP' ? <AnalisePCP perfil={usuario.perfil} /> : pagina === 'Cadastros' ? <Cadastros perfil={usuario.perfil} /> : pagina === 'Histórico' ? <Historico perfil={usuario.perfil} /> : pagina === 'Usuários e logs' ? <UsuariosLogs perfil={usuario.perfil} meuId={session.user.id} aoMudarPendentes={setPendentes} /> : <Fila perfil={usuario.perfil} />}
       </main>
     </div>
   )

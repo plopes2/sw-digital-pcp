@@ -190,3 +190,42 @@ button.navfoot:hover .avatar{box-shadow:0 0 0 2px #1F5FBF}
 
 .ap-page{display:flex;flex-direction:column;gap:12px;height:calc(100vh - 40px);min-height:560px}
 .filtro-fila{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;background:#fff;border:1px solid #DDE1E7;border-radius:10px;padding:10px 16px}
+
+/* Cadastros e Item de produção */
+.tabs{display:flex;gap:4px;border-bottom:1px solid #DDE1E7}
+.tab{border:0;background:none;padding:10px 14px;font:inherit;font-size:14px;color:#3B4756;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;min-height:44px}
+.tab:hover{color:#1B2430}
+.tab.on{color:#1F5FBF;font-weight:600;border-bottom-color:#1F5FBF}
+.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:#3B4756;min-height:40px}
+.chk input{width:18px;height:18px}
+.tb-cad td{max-width:240px}
+.tb-cad tr.novo-grupo td{border-top:2px solid #DDE1E7}
+.tb-cad tr.inativa td{opacity:.55}
+.tb-cad td.tags{white-space:normal;max-width:none}
+.tb-cad td.tags .badge{margin:0 4px 2px 0}
+.tb-cad tr.clicavel{cursor:pointer}
+.tb-cad tr.clicavel:hover td{background:#F4F7FC}
+.tb-cad tr.det td{background:#F7F9FC;white-space:normal;max-width:none}
+.cores{display:flex;flex-wrap:wrap;gap:6px}
+.cor{background:#fff;border:1px solid #DDE1E7;border-radius:6px;padding:3px 8px;font-size:12px}
+.cor b{color:#5A6675;margin-right:4px}
+.item-prod{gap:10px}
+.ip-topo{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.ip-busca{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.ip-lista{display:flex;flex-direction:column;gap:8px;max-height:380px;overflow:auto;padding-right:4px}
+.ip-grupo{border:1px solid #DDE1E7;border-radius:10px;overflow:hidden;background:#fff}
+.ip-gcab{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:7px 12px;background:#F2F4F7;font-size:13px}
+.ip-opt{display:flex;gap:10px;align-items:center;padding:9px 12px;border-top:1px solid #EDF0F4;cursor:pointer;min-height:44px;flex-wrap:wrap}
+.ip-opt:hover{background:#F4F7FC}
+.ip-opt.on{background:#E3ECFA;box-shadow:inset 3px 0 0 #1F5FBF}
+.ip-opt.off{opacity:.6}
+.ip-opt input{width:18px;height:18px;flex:none}
+.ip-main{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;flex:1 1 320px;align-items:center}
+.ip-papel,.ip-cli{color:#5A6675;font-size:12px}
+.ip-tags{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:11.5px}
+.ip-uso{color:#5A6675}
+.ip-novo{display:flex;flex-direction:column;gap:10px}
+.ip-campos{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.ip-form{display:flex;flex-direction:column;gap:10px;border-top:1px solid #E7EAEF;padding-top:10px}
+.ip-sel{font-size:13px;background:#F4F5F7;border-radius:8px;padding:8px 12px;color:#5A6675}
+.ip-sel.ok{background:#E3ECFA;color:#173F85}
