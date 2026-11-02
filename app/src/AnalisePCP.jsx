@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase, prog } from './supabase.js'
 
 const motor = () => supabase.schema('motor')
+const cad = () => supabase.schema('cadastro')
 
 // status que pedem ação do PCP
 const AV = ['AVALIAR', 'ALINHADO SEM REGISTRO', 'ALINHADO · BI MUDOU', 'SEM DATA']
@@ -226,7 +227,49 @@ function Kpi({ n, t, tom }) {
   )
 }
 
-function Painel({ aberto, pct, setPct, previa, detalhe, enviando, onProgramar, onCancelar }) {
+/** Mostra a combinação (bobina + clichê) que o Programar vai usar: a última usada. Se houver outras, um alerta discreto. */
+function CombinacaoAviso({ material }) {
+  const [combos, setCombos] = useState(null)
+  const [aberta, setAberta] = useState(false)
+  useEffect(() => {
+    let vivo = true
+    setCombos(null); setAberta(false)
+    if (!material) return undefined
+    cad().from('combinacao_v').select('*').eq('material', material).eq('ativo', true)
+      .order('ultimo_uso', { ascending: false, nullsFirst: false }).order('usos', { ascending: false })
+      .then(({ data }) => { if (vivo) setCombos(data || []) })
+    return () => { vivo = false }
+  }, [material])
+  if (combos === null) return <span style={{ color: '#5A6675', fontSize: 12.5 }}>Verificando bobina e clichê…</span>
+  if (!combos.length) return <span className="ap-alerta">Material sem combinação bobina + clichê cadastrada: a linha entra sem clichê. Cadastre em Cadastros.</span>
+  const [usada, ...outras] = combos
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12.5 }}>
+      <span>
+        <b>Será usado:</b> bobina <span className="mono">{usada.sku_bobina}</span> · clichê <span className="mono">{usada.sku_cliche}</span>
+        {usada.rotulo ? ` (${limpa(usada.rotulo)})` : ''} · último uso {fmtD(usada.ultimo_uso)}
+      </span>
+      {outras.length > 0 && (
+        <span className="ap-alerta">
+          ⚠ Este material tem mais {outras.length} {outras.length === 1 ? 'combinação' : 'combinações'} cadastrada{outras.length === 1 ? '' : 's'}.{' '}
+          <button className="linkbtn" onClick={() => setAberta((v) => !v)}>{aberta ? 'ocultar' : 'ver'}</button>
+          {aberta && (
+            <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+              {outras.map((c) => (
+                <li key={c.id ?? c.sku_bobina + c.sku_cliche}>
+                  bobina <span className="mono">{c.sku_bobina}</span> · clichê <span className="mono">{c.sku_cliche}</span>
+                  {c.rotulo ? ` (${limpa(c.rotulo)})` : ''} · último uso {fmtD(c.ultimo_uso)} · {c.usos} uso{Number(c.usos) === 1 ? '' : 's'}
+                </li>
+              ))}
+            </ul>
+          )}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function Painel({ aberto, material, pct, setPct, previa, detalhe, enviando, onProgramar, onCancelar }) {
   if (!aberto) return null
   return (
     <div className="ap-painel">
@@ -236,6 +279,7 @@ function Painel({ aberto, pct, setPct, previa, detalhe, enviando, onProgramar, o
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 13, flex: '1 1 320px' }}>
         <span>{previa}</span>
         <span style={{ color: '#5A6675' }}>{detalhe}</span>
+        <CombinacaoAviso material={material} />
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button className="btn primary" disabled={enviando} onClick={onProgramar}>{enviando ? 'Programando…' : 'Programar na Fila'}</button>
@@ -294,6 +338,7 @@ function TabelaMto({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
               </div>
               <Painel
                 aberto={abre1}
+                material={x.material}
                 pct={pct}
                 setPct={setPct}
                 enviando={enviando}
@@ -354,6 +399,7 @@ function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
               </div>
               <Painel
                 aberto={abre1}
+                material={x.sku_caixa}
                 pct={pct}
                 setPct={setPct}
                 enviando={enviando}

@@ -229,3 +229,5 @@ button.navfoot:hover .avatar{box-shadow:0 0 0 2px #1F5FBF}
 .ip-form{display:flex;flex-direction:column;gap:10px;border-top:1px solid #E7EAEF;padding-top:10px}
 .ip-sel{font-size:13px;background:#F4F5F7;border-radius:8px;padding:8px 12px;color:#5A6675}
 .ip-sel.ok{background:#E3ECFA;color:#173F85}
+.ap-alerta{display:block;color:#74460A;background:#FDF3E3;border:1px solid #F0D3A0;border-radius:4px;padding:3px 8px;font-size:12.5px;line-height:1.4}
+.ap-alerta .linkbtn{font-size:12.5px}
