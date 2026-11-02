@@ -13,6 +13,7 @@ const hhmm = (s) => (s ? String(s).slice(0, 5) : '—')
 const num = (v, d = 0) => (v == null || v === '' ? '—' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d }))
 const weekday = (s) => { const p = parts(s); return WD[new Date(p[0], p[1] - 1, p[2]).getDay()] }
 const fmtH = (v) => num(v, 1)
+const norm = (t) => String(t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
 
 function Sortable({ id, disabled, className, children }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled })
@@ -91,6 +92,8 @@ export default function Fila({ perfil }) {
   const [okMsg, setOkMsg] = useState(null)
   const [salvandoHist, setSalvandoHist] = useState(false)
   const [alinhar, setAlinhar] = useState(null) // linha cuja data de ruptura está sendo alinhada
+  const [busca, setBusca] = useState('') // material, OP, cliente, SKU ou dd/mm
+  const [dataFiltro, setDataFiltro] = useState('') // dia (yyyy-mm-dd)
 
   const carregar = useCallback(async () => {
     const [f, o] = await Promise.all([
@@ -195,22 +198,41 @@ export default function Fila({ perfil }) {
     carregar()
   }
 
+  const filtrando = busca.trim() !== '' || dataFiltro !== ''
+  const rowsVis = useMemo(() => {
+    if (!rows) return null
+    if (!filtrando) return rows
+    const termos = norm(busca).split(' ').filter(Boolean)
+    return rows.filter((r) => {
+      if (r.tipo === 'separador') return false
+      if (dataFiltro && r.data_producao !== dataFiltro) return false
+      if (!termos.length) return true
+      const palheiro = norm([r.material, r.op, r.cliente, r.rotulo, r.material_descricao, r.descricao, r.sku_cliche, r.sku_bobina, r.observacoes,
+        r.data_producao && fmtD(r.data_producao), r.data_producao && fmtD(r.data_producao) + '/' + String(r.data_producao).slice(0, 4)].filter(Boolean).join(' '))
+      return termos.every((t) => palheiro.includes(t))
+    })
+  }, [rows, busca, dataFiltro, filtrando])
+
   const resumo = useMemo(() => {
     if (!rows) return ''
+    if (filtrando) {
+      const n = rowsVis.filter((r) => r.tipo === 'op').length
+      return `Filtro ativo · ${n} de ${rows.filter((r) => r.tipo === 'op').length} itens · arrastar desativado enquanto filtra`
+    }
     const ops = rows.filter((r) => r.tipo === 'op')
     const datas = ops.map((r) => r.data_producao).filter(Boolean).sort()
     const manuais = rows.filter((r) => r.tipo === 'manual').length
     const faixa = datas.length ? fmtD(datas[0]) + ' a ' + fmtD(datas[datas.length - 1]) + ' · ' : ''
     return faixa + ops.length + ' itens · ' + manuais + ' linhas manuais' + (ehController ? ' · arraste pelo ícone da esquerda para reordenar' : '')
-  }, [rows, ehController])
+  }, [rows, rowsVis, filtrando, ehController])
 
   // monta a lista com cabeçalhos de dia
   const itens = useMemo(() => {
-    if (!rows) return []
+    if (!rowsVis) return []
     const out = []
     let cur = '#'
-    const semData = rows.filter((r) => r.tipo === 'op' && !r.data_producao)
-    rows.forEach((r) => {
+    const semData = rowsVis.filter((r) => r.tipo === 'op' && !r.data_producao)
+    rowsVis.forEach((r) => {
       if (r.tipo === 'separador') { out.push({ k: 'sep', r }); cur = '#'; return }
       if (r.tipo === 'manual') { out.push({ k: 'manual', r }); return }
       const d = r.data_producao || null
@@ -235,7 +257,9 @@ export default function Fila({ perfil }) {
       out.push({ k: 'op', r })
     })
     return out
-  }, [rows, ocup])
+  }, [rowsVis, ocup])
+
+  const podeArrastar = ehController && !filtrando
 
   if (rows === null && !erro) return <div className="loading">Carregando fila…</div>
 
@@ -296,6 +320,17 @@ export default function Fila({ perfil }) {
         </form>
       )}
 
+      <section aria-label="Filtro da Fila" className="filtro-fila">
+        <label className="fld" style={{ flex: '1 1 260px', maxWidth: 420 }}>Buscar por material, OP, cliente ou dd/mm
+          <input type="search" placeholder="Ex.: 209831B, vulcabras, 05/11" value={busca} onChange={(e) => setBusca(e.target.value)} />
+        </label>
+        <label className="fld">Data de produção
+          <input type="date" value={dataFiltro} onChange={(e) => setDataFiltro(e.target.value)} />
+        </label>
+        {filtrando && <button type="button" className="btn" onClick={() => { setBusca(''); setDataFiltro('') }}>Limpar filtro</button>}
+        {filtrando && rowsVis && <span style={{ fontSize: 13, color: '#5A6675', alignSelf: 'center' }}>{rowsVis.filter((r) => r.tipo === 'op').length} item(ns) encontrado(s)</span>}
+      </section>
+
       <section aria-label="Legenda" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 22px', alignItems: 'center', fontSize: 12, color: '#3B4756' }}>
         <span><span className="late">Data prod.</span> (vermelho): ATRASADO</span>
         <span><span className="rg">Data ruptura</span> (verde): ruptura −3 dias</span>
@@ -310,7 +345,7 @@ export default function Fila({ perfil }) {
           <CabecalhoFila />
 
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={aoSoltar}>
-            <SortableContext items={(rows || []).map((r) => r.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext items={(rowsVis || []).map((r) => r.id)} strategy={verticalListSortingStrategy}>
               {itens.map((it, i) => {
                 if (it.k === 'dia') {
                   return (
@@ -321,7 +356,7 @@ export default function Fila({ perfil }) {
                 }
                 if (it.k === 'sep') {
                   return (
-                    <Sortable key={it.r.id} id={it.r.id} disabled={!ehController} className="seprow">
+                    <Sortable key={it.r.id} id={it.r.id} disabled={!podeArrastar} className="seprow">
                       {(h) => (
                         <div className="seplab" {...(ehController ? h : {})} style={{ cursor: ehController ? 'grab' : 'default' }}>
                           BLOCO DE PENDÊNCIAS <span>acima: liberado para montagem e setup · abaixo: pendente</span>
@@ -333,10 +368,10 @@ export default function Fila({ perfil }) {
                 if (it.k === 'manual') {
                   const r = it.r
                   return (
-                    <Sortable key={r.id} id={r.id} disabled={!ehController} className="g evt">
+                    <Sortable key={r.id} id={r.id} disabled={!podeArrastar} className="g evt">
                       {(h) => (
                         <>
-                          <Grip handle={h} disabled={!ehController} />
+                          <Grip handle={h} disabled={!podeArrastar} />
                           <div className="c s2" style={{ gridColumn: '2 / 5', justifyContent: 'space-between' }}>
                             <span>{r.descricao}</span>
                             {ehController && <button className="xbtn" style={{ color: '#14532D' }} title="Excluir linha" onClick={() => excluirManual(r)}>×</button>}
@@ -348,7 +383,7 @@ export default function Fila({ perfil }) {
                     </Sortable>
                   )
                 }
-                return <LinhaOp key={it.r.id} r={it.r} ehController={ehController} podeOp={podeOp} salvar={salvar} excluir={excluirOp} abrirAlinhar={ehController ? setAlinhar : undefined} />
+                return <LinhaOp key={it.r.id} r={it.r} ehController={ehController} semArrastar={filtrando} podeOp={podeOp} salvar={salvar} excluir={excluirOp} abrirAlinhar={ehController ? setAlinhar : undefined} />
               })}
             </SortableContext>
           </DndContext>
@@ -465,7 +500,7 @@ function DataCell({ r, editavel, onSave }) {
   )
 }
 
-export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar, podeExcluir }) {
+export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar, podeExcluir, semArrastar }) {
   const cores = Array.isArray(r.cores) ? r.cores : []
   const slot = (n) => cores.find((c) => Number(c.posicao) === n)
   const cliOk = r.cliche_disponivel !== false
@@ -476,10 +511,10 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar
   const nomeCli = String(r.material_descricao ?? r.rotulo ?? r.cliente ?? '').replace(/\s+/g, ' ')
 
   return (
-    <Sortable id={r.id} disabled={!ehController} className="g orow">
+    <Sortable id={r.id} disabled={!ehController || !!semArrastar} className="g orow">
       {(h) => (
         <>
-          <Grip handle={h} disabled={!ehController} />
+          <Grip handle={h} disabled={!ehController || !!semArrastar} />
           <div className="c s2 mono">
             <TextEdit className="mono" value={r.op} placeholder="nº OP" label="Número da OP gerada no SAP" disabled={!ehController} onSave={(v) => salvar(r.id, { op: v })} />
           </div>
