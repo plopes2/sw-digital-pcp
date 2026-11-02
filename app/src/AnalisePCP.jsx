@@ -198,7 +198,7 @@ export default function AnalisePCP({ perfil }) {
           ))}
         </div>
         <label className="fld">Buscar
-          <input type="search" placeholder={aba === 'mto' ? 'Material ou descrição' : 'Contrato, descrição ou SKU'} style={{ width: 260, maxWidth: '100%' }} value={q} onChange={(e) => setQ(e.target.value)} />
+          <input type="search" placeholder={aba === 'mto' ? 'Material ou cliente' : 'Contrato, cliente ou SKU'} style={{ width: 260, maxWidth: '100%' }} value={q} onChange={(e) => setQ(e.target.value)} />
         </label>
       </section>
 
@@ -251,7 +251,7 @@ function TabelaMto({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
     <section aria-label="Materiais com falta (MTO)" className="ap-wrap">
       <div className="ap-t" role="table">
         <div className="ap-r ap-mto ap-h" role="row">
-          {['Material', 'Descrição', 'Data crítica (BI)'].map((h) => <div key={h} className="ap-c" role="columnheader">{h}</div>)}
+          {['Material', 'Cliente', 'Data crítica (BI)'].map((h) => <div key={h} className="ap-c" role="columnheader">{h}</div>)}
           <div className="ap-c ap-n" role="columnheader">Produzir (m)</div>
           <div className="ap-c ap-n" role="columnheader">Na Fila (m)</div>
           <div className="ap-c ap-n" role="columnheader">Diferença</div>
@@ -268,7 +268,7 @@ function TabelaMto({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
             <div key={x.material}>
               <div className="ap-r ap-mto ap-b" role="row">
                 <div className="ap-c mono" style={{ fontWeight: 500 }}>{x.material}</div>
-                <div className="ap-c" style={{ lineHeight: 1.3, color: x.material_descricao ? '#1B2430' : '#5A6675' }}>{limpa(x.material_descricao) || 'Sem cadastro de material'}</div>
+                <div className="ap-c" title={limpa(x.material_descricao) || ''} style={{ color: x.material_descricao ? '#1B2430' : '#5A6675' }}><span className="ap-cli">{limpa(x.material_descricao) || 'Sem cadastro de material'}</span></div>
                 <div className="ap-c mono">{fmtD(x.data_critica_real)}</div>
                 <div className="ap-c ap-n mono" style={{ fontWeight: 500 }}>{fmtN(x.produzir_m)}</div>
                 <div className="ap-c ap-n mono">{fmtN(x.programado_m)}</div>
@@ -317,7 +317,7 @@ function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
     <section aria-label="Contratos (MTS)" className="ap-wrap">
       <div className="ap-t mts" role="table">
         <div className="ap-r ap-mts ap-h" role="row">
-          {['Contrato', 'Item (descrição completa)', 'Planta', 'SKU caixa'].map((h) => <div key={h} className="ap-c" role="columnheader">{h}</div>)}
+          {['Contrato', 'Cliente', 'Planta', 'SKU caixa'].map((h) => <div key={h} className="ap-c" role="columnheader">{h}</div>)}
           {['M.L. contrato', 'Pedido (m)', 'Estoque (m)'].map((h) => <div key={h} className="ap-c ap-n" role="columnheader">{h}</div>)}
           <div className="ap-c" role="columnheader">Ação</div>
           {['Produzir (m)', 'Na Fila (m)', 'Diferença'].map((h) => <div key={h} className="ap-c ap-n" role="columnheader">{h}</div>)}
@@ -332,7 +332,7 @@ function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
             <div key={x.contrato_id}>
               <div className="ap-r ap-mts ap-b" role="row">
                 <div className="ap-c mono" style={{ fontWeight: 500 }}>{x.codigo}</div>
-                <div className="ap-c" style={{ lineHeight: 1.3 }}>{limpa(x.material_descricao || x.descricao) || '—'}</div>
+                <div className="ap-c" title={limpa(x.material_descricao || x.descricao) || ''}><span className="ap-cli">{limpa(x.material_descricao || x.descricao) || '—'}</span></div>
                 <div className="ap-c">{x.planta ?? '—'}</div>
                 <div className="ap-c mono">{x.sku_caixa ?? '—'}</div>
                 <div className="ap-c ap-n mono">{fmtN(x.ml_contrato)}</div>
