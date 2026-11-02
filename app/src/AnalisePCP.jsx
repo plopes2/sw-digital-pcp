@@ -141,7 +141,7 @@ export default function AnalisePCP({ perfil }) {
   const linhas = aba === 'mto' ? linhasMto : linhasMts
 
   return (
-    <>
+    <div className="ap-page">
       <header style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', justifyContent: 'space-between' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, letterSpacing: '-0.3px' }}>Análise PCP</h1>
@@ -213,7 +213,7 @@ export default function AnalisePCP({ perfil }) {
           ? 'Produzir = necessidade pelo racional do SEQUENCIAMENTO (janela de 45 dias). Na Fila = soma da M. Mínima das linhas do material. Para registrar o alinhamento de uma data, use a coluna Data ruptura na Fila.'
           : 'Regra da aba TB_CONTRATOS: Produzir se Estoque < Pedido; Ressuprir se Estoque − Pedido < M.L. contrato; Super estoque se Estoque − Pedido > M.L. contrato × 1,1. Produzir (m) = Pedido − Estoque + M.L. contrato. MTS não tem status de data.'}
       </div>
-    </>
+    </div>
   )
 }
 
