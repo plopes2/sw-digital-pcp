@@ -98,13 +98,15 @@ export default function Fila({ perfil }) {
   const [dataFiltro, setDataFiltro] = useState('') // dia (yyyy-mm-dd)
 
   const carregar = useCallback(async () => {
-    const [f, o] = await Promise.all([
+    const [f, o, ob] = await Promise.all([
       prog().from('fila_calculada').select('*').order('ordem'),
       prog().from('ocupacao_dia').select('*').order('data'),
+      supabase.schema('cadastro').from('cliche_vigente').select('sku_cliche').eq('status', 'obsoleto'),
     ])
     if (f.error) { setErro(f.error.message); return }
     setErro(null)
-    setRows(f.data)
+    const obsoletos = new Set((ob.data || []).map((c) => c.sku_cliche))
+    setRows(f.data.map((r) => (r.sku_cliche && obsoletos.has(r.sku_cliche) ? { ...r, cliche_obsoleto: true } : r)))
     const m = {}
     ;(o.data || []).forEach((d) => { m[d.data] = d })
     setOcup(m)
@@ -535,7 +537,7 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar
           </div>
           <div className="c s4"><span title={nomeCli}>{nomeCli}</span></div>
           <div className="c mono">{r.sku_bobina ?? '—'}</div>
-          <div className="c mono">{r.sku_cliche ?? '—'}</div>
+          <div className="c mono">{r.sku_cliche ?? '—'}{r.cliche_obsoleto && <span title="Clichê OBSOLETO: a última versão na aba DADOS está como obsoleta" aria-label="Clichê obsoleto" style={{ color: '#B45309', marginLeft: 3 }}>⚠</span>}</div>
           <div className="c edit">
             {cliOk
               ? <svg width="14" height="14" viewBox="0 0 14 14" role="img" aria-label="Clichê disponível" style={{ color: '#0F7A3E' }}><path d="M2.5 7.5l3 3 6-6.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>

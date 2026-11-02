@@ -175,6 +175,7 @@ function Combinacoes({ ehController }) {
                         {c.n_materiais_cliche > 1 && <span className="badge b-info" title="Clichê usado em mais de um material">clichê em {c.n_materiais_cliche} mat.</span>}
                         {c.n_materiais_bobina > 1 && <span className="badge b-info" title="Bobina usada em mais de um material">bobina em {c.n_materiais_bobina} mat.</span>}
                         {!c.cliche_cadastrado && <span className="badge b-warn" title="Clichê ainda não está no catálogo">fora do catálogo</span>}
+                        {c.cliche_status === 'obsoleto' && <span className="badge b-warn" title="A última versão deste clichê na aba DADOS está como obsoleta">clichê obsoleto</span>}
                       </td>
                       {ehController && <td><button className="btn sm" onClick={() => alternarAtivo(c)}>{c.ativo ? 'Desativar' : 'Reativar'}</button></td>}
                     </tr>

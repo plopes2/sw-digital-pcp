@@ -149,6 +149,7 @@ export default function ItemProducao({ filaRows, onCancel, onIncluido }) {
                           {c.n_materiais_cliche > 1 && <span className="badge b-info" title="Este clichê também é usado em outros materiais">clichê em {c.n_materiais_cliche} materiais</span>}
                           {c.n_materiais_bobina > 1 && <span className="badge b-info" title="Esta bobina também é usada em outros materiais">bobina em {c.n_materiais_bobina} materiais</span>}
                           {!c.cliche_cadastrado && <span className="badge b-warn" title="O clichê ainda não está no catálogo (cores, camisa e adaptador não aparecem)">clichê fora do catálogo</span>}
+                          {c.cliche_status === 'obsoleto' && <span className="badge b-warn" title="A última versão deste clichê na aba DADOS está como obsoleta">clichê OBSOLETO</span>}
                           <span className="ip-uso">{c.ultimo_uso ? `último uso ${fmtData(c.ultimo_uso)}` : 'nunca programada'} · {c.usos} uso(s)</span>
                         </span>
                       </label>
