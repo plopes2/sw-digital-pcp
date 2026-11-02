@@ -5,7 +5,7 @@ const PERFIL = { controller: 'Controller', operacao: 'Operação', consultor: 'C
 const STATUS = { pendente: ['Pendente', 'b-warn'], ativo: ['Ativo', 'b-ok'], bloqueado: ['Bloqueado', 'b-err'] }
 const ACAO = { INSERT: ['Inclusão', 'b-ok'], UPDATE: ['Alteração', 'b-info'], DELETE: ['Exclusão', 'b-err'] }
 const TABELAS = [
-  'acesso.usuario', 'acompanhamento.fila_snapshot', 'acompanhamento.realizado',
+  'acesso.usuario', 'acompanhamento.fila_snapshot', 'acompanhamento.fila_snapshot_linha', 'acompanhamento.realizado',
   'cadastro.adaptador', 'cadastro.camisa', 'cadastro.cliche', 'cadastro.cliche_cor', 'cadastro.cliente',
   'cadastro.contrato', 'cadastro.contrato_sku', 'cadastro.material', 'cadastro.papel', 'cadastro.papel_tipo', 'cadastro.tinta',
   'entrada.carga', 'programacao.fila_linha',
@@ -245,6 +245,8 @@ function Detalhe({ l }) {
   }
   if (!campos.length) return <span style={{ color: '#5A6675' }}>Sem diferenças além da data de atualização.</span>
   return (
+    <>
+    {l.motivo && <div style={{ marginBottom: 6 }}><strong>Motivo:</strong> {l.motivo}</div>}
     <table className="tb" style={{ background: '#fff' }}>
       <thead><tr><th>Campo</th>{l.acao !== 'INSERT' && <th>Antes</th>}{l.acao !== 'DELETE' && <th>Depois</th>}</tr></thead>
       <tbody>
@@ -257,5 +259,6 @@ function Detalhe({ l }) {
         ))}
       </tbody>
     </table>
+    </>
   )
 }

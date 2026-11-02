@@ -12,7 +12,8 @@ const hhmm = (s) => (s ? String(s).slice(0, 5) : '—')
 const PAGINA = 600
 const noop = () => {}
 
-export default function Historico() {
+export default function Historico({ perfil }) {
+  const ehController = perfil === 'controller'
   const hoje = new Date()
   const [de, setDe] = useState(iso(new Date(hoje.getTime() - 30 * 86400000)))
   const [ate, setAte] = useState(iso(hoje))
@@ -75,6 +76,19 @@ export default function Historico() {
     })
     return out
   }, [visiveis, filtradas])
+
+  async function excluirLinha(it) {
+    const r = it.r
+    const nome = it.k === 'manual' ? `"${r.descricao}"` : [r.op && 'OP ' + r.op, r.material].filter(Boolean).join(' · ')
+    const dia = fmtBR(r.data_producao)
+    const motivo = window.prompt(`Excluir ${nome} do Histórico de ${dia}.\n\nInforme o motivo (obrigatório). A exclusão fica registrada em Usuários e logs com a linha completa.`)
+    if (motivo == null) return
+    if (motivo.trim().length < 3) { setErro('Informe o motivo da exclusão.'); return }
+    setErro(null)
+    const { error } = await ac().rpc('excluir_historico_linha', { p_linha_id: it.id, p_motivo: motivo })
+    if (error) { setErro('Não foi possível excluir: ' + error.message); return }
+    await carregar()
+  }
 
   const [exportando, setExportando] = useState(false)
   async function exportar() {
@@ -147,14 +161,17 @@ export default function Historico() {
                   return (
                     <div className="g evt" key={it.id} role="row">
                       <div className="c s1" />
-                      <div className="c s2" style={{ gridColumn: '2 / 5' }}><span>{it.r.descricao}</span></div>
+                      <div className="c s2" style={{ gridColumn: '2 / 5', justifyContent: 'space-between' }}>
+                        <span>{it.r.descricao}</span>
+                        {ehController && <button className="xbtn" style={{ color: '#14532D' }} title="Excluir linha do Histórico" aria-label="Excluir linha do Histórico" onClick={() => excluirLinha(it)}>×</button>}
+                      </div>
                       <div className="c mono" style={{ gridColumn: 8 }}>{fmtBR(it.r.data_producao).slice(0, 5)}</div>
                       <div className="c mono" style={{ gridColumn: 9 }}>{hhmm(it.r.inicio)}</div>
                       <div className="c mono" style={{ gridColumn: 10 }}>{hhmm(it.r.fim)}</div>
                     </div>
                   )
                 }
-                return <LinhaOp key={it.id} r={it.r} ehController={false} podeOp={false} salvar={noop} />
+                return <LinhaOp key={it.id} r={it.r} ehController={false} podeOp={false} salvar={noop} podeExcluir={ehController} excluir={() => excluirLinha(it)} />
               })}
             </SortableContext>
           </DndContext>

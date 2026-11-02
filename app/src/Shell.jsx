@@ -92,7 +92,7 @@ export default function Shell({ session, usuario }) {
         </>
       )}
       <main className="main">
-        {pagina === 'Dados' ? <Dados perfil={usuario.perfil} /> : pagina === 'Análise PCP' ? <AnalisePCP perfil={usuario.perfil} /> : pagina === 'Histórico' ? <Historico /> : pagina === 'Usuários e logs' ? <UsuariosLogs perfil={usuario.perfil} meuId={session.user.id} aoMudarPendentes={setPendentes} /> : <Fila perfil={usuario.perfil} />}
+        {pagina === 'Dados' ? <Dados perfil={usuario.perfil} /> : pagina === 'Análise PCP' ? <AnalisePCP perfil={usuario.perfil} /> : pagina === 'Histórico' ? <Historico perfil={usuario.perfil} /> : pagina === 'Usuários e logs' ? <UsuariosLogs perfil={usuario.perfil} meuId={session.user.id} aoMudarPendentes={setPendentes} /> : <Fila perfil={usuario.perfil} />}
       </main>
     </div>
   )

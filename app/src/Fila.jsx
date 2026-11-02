@@ -465,7 +465,7 @@ function DataCell({ r, editavel, onSave }) {
   )
 }
 
-export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar }) {
+export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar, podeExcluir }) {
   const cores = Array.isArray(r.cores) ? r.cores : []
   const slot = (n) => cores.find((c) => Number(c.posicao) === n)
   const cliOk = r.cliche_disponivel !== false
@@ -484,7 +484,7 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar
             <TextEdit className="mono" value={r.op} placeholder="nº OP" label="Número da OP gerada no SAP" disabled={!ehController} onSave={(v) => salvar(r.id, { op: v })} />
           </div>
           <div className="c s3 mono" style={{ fontWeight: 600, gap: 0, paddingLeft: 3, paddingRight: 3 }}>
-            {excluir && ehController && <button className="xbtn" style={{ color: '#B42318', padding: '0 3px 0 0' }} title="Excluir OP da Fila" aria-label={'Excluir OP ' + (r.op || r.material)} onClick={() => excluir(r)}>×</button>}
+            {excluir && (ehController || podeExcluir) && <button className="xbtn" style={{ color: '#B42318', padding: '0 3px 0 0' }} title={podeExcluir ? 'Excluir linha do Histórico' : 'Excluir OP da Fila'} aria-label={'Excluir OP ' + (r.op || r.material)} onClick={() => excluir(r)}>×</button>}
             {r.material}
           </div>
           <div className="c s4"><span title={nomeCli}>{nomeCli}</span></div>
