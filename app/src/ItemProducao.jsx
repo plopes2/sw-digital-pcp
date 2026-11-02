@@ -34,16 +34,15 @@ export default function ItemProducao({ filaRows, onCancel, onIncluido }) {
       .then(({ data }) => setCliches(new Map((data || []).map((c) => [c.sku_cliche, c.rotulo]))))
   }, [novo, cliches])
 
-  const recentes = useMemo(() => (combos || []).filter((c) => c.mais_recente && c.ultimo_uso).sort((a, b) => String(b.ultimo_uso).localeCompare(String(a.ultimo_uso))).slice(0, 8), [combos])
   const achados = useMemo(() => (combos && busca.trim() ? filtrarCombos(combos, busca) : null), [combos, busca])
 
   // agrupa por material (mantendo a ordem de uso: mais recente primeiro)
   const grupos = useMemo(() => {
-    const lista = achados ?? recentes
+    const lista = achados ?? []
     const g = new Map()
-    lista.slice(0, achados ? 400 : 8).forEach((c) => { if (!g.has(c.material)) g.set(c.material, []); g.get(c.material).push(c) })
+    lista.slice(0, 400).forEach((c) => { if (!g.has(c.material)) g.set(c.material, []); g.get(c.material).push(c) })
     return [...g.entries()].map(([material, cs]) => ({ material, cs }))
-  }, [achados, recentes])
+  }, [achados])
   const totalAchados = achados ? achados.length : 0
   const gruposVis = achados ? grupos.slice(0, MAX) : grupos
   const nMateriaisAchados = achados ? new Set(achados.map((c) => c.material)).size : 0
@@ -122,7 +121,7 @@ export default function ItemProducao({ filaRows, onCancel, onIncluido }) {
               <div className="sub">
                 {achados
                   ? (totalAchados ? `${nMateriaisAchados} material(is) · ${totalAchados} combinação(ões)${nMateriaisAchados > MAX ? ` — mostrando ${MAX} materiais, refine a busca` : ''}` : '')
-                  : 'Usados recentemente (digite para buscar em todo o cadastro)'}
+                  : 'Digite o material, SKU clichê, SKU bobina ou cliente para ver as combinações.'}
               </div>
               {achados && totalAchados === 0 && (
                 <div className="msg warnmsg">Nenhuma combinação encontrada para “{busca}”. Se for um material ou combinação nova, use <b>+ Nova combinação</b>.</div>

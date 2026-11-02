@@ -231,3 +231,6 @@ button.navfoot:hover .avatar{box-shadow:0 0 0 2px #1F5FBF}
 .ip-sel.ok{background:#E3ECFA;color:#173F85}
 .ap-alerta{display:block;color:#74460A;background:#FDF3E3;border:1px solid #F0D3A0;border-radius:4px;padding:3px 8px;font-size:12.5px;line-height:1.4}
 .ap-alerta .linkbtn{font-size:12.5px}
+.trocar{border:0;background:none;color:inherit;font:inherit;padding:0;cursor:pointer;text-decoration:underline dotted #8FAEE0;text-underline-offset:3px}
+.trocar:hover{color:#1F5FBF;text-decoration-style:solid}
+.trocar:focus-visible{outline:2px solid #1F5FBF;outline-offset:2px;border-radius:2px}

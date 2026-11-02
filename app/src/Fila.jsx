@@ -93,6 +93,7 @@ export default function Fila({ perfil }) {
   const [okMsg, setOkMsg] = useState(null)
   const [salvandoHist, setSalvandoHist] = useState(false)
   const [alinhar, setAlinhar] = useState(null) // linha cuja data de ruptura está sendo alinhada
+  const [trocar, setTrocar] = useState(null) // linha cuja bobina/clichê está sendo trocada
   const [showItem, setShowItem] = useState(false)
   const [busca, setBusca] = useState('') // material, OP, cliente, SKU ou dd/mm
   const [dataFiltro, setDataFiltro] = useState('') // dia (yyyy-mm-dd)
@@ -396,7 +397,7 @@ export default function Fila({ perfil }) {
                     </Sortable>
                   )
                 }
-                return <LinhaOp key={it.r.id} r={it.r} ehController={ehController} semArrastar={filtrando} podeOp={podeOp} salvar={salvar} excluir={excluirOp} abrirAlinhar={ehController ? setAlinhar : undefined} />
+                return <LinhaOp key={it.r.id} r={it.r} ehController={ehController} semArrastar={filtrando} podeOp={podeOp} salvar={salvar} excluir={excluirOp} abrirAlinhar={ehController ? setAlinhar : undefined} abrirTrocar={ehController ? setTrocar : undefined} />
               })}
             </SortableContext>
           </DndContext>
@@ -405,7 +406,99 @@ export default function Fila({ perfil }) {
       </section>
 
       {alinhar && <AlinharModal r={alinhar} onFechar={() => setAlinhar(null)} onSalvo={async () => { setAlinhar(null); await carregar() }} />}
+      {trocar && <TrocarCombinacaoModal r={trocar} onFechar={() => setTrocar(null)} onSalvo={async (msg) => { setTrocar(null); setOkMsg(msg); await carregar() }} />}
     </>
+  )
+}
+
+/* ---------- troca de bobina e clichê de uma linha da Fila (Controller) ---------- */
+function TrocarCombinacaoModal({ r, onFechar, onSalvo }) {
+  const [combos, setCombos] = useState(null)
+  const [sel, setSel] = useState(`${r.sku_bobina ?? ''}|${r.sku_cliche ?? ''}`)
+  const [outra, setOutra] = useState({ bob: '', cli: '' })
+  const [erro, setErro] = useState(null)
+  const [salvando, setSalvando] = useState(false)
+
+  useEffect(() => {
+    const fechar = (e) => { if (e.key === 'Escape') onFechar() }
+    window.addEventListener('keydown', fechar)
+    return () => window.removeEventListener('keydown', fechar)
+  }, [onFechar])
+
+  useEffect(() => {
+    let vivo = true
+    supabase.schema('cadastro').from('combinacao_v').select('*').eq('material', r.material).eq('ativo', true)
+      .order('ultimo_uso', { ascending: false, nullsFirst: false }).order('usos', { ascending: false })
+      .then(({ data, error }) => { if (!vivo) return; if (error) setErro(error.message); setCombos(data || []) })
+    return () => { vivo = false }
+  }, [r.material])
+
+  const usaOutra = sel === 'outra'
+  const bob = usaOutra ? outra.bob.trim() : sel.split('|')[0]
+  const cli = usaOutra ? outra.cli.trim().toUpperCase() : sel.split('|')[1]
+  const igual = bob === (r.sku_bobina ?? '') && cli === (r.sku_cliche ?? '')
+  const fmtD2 = (s) => (s ? String(s).slice(8, 10) + '/' + String(s).slice(5, 7) + '/' + String(s).slice(2, 4) : '—')
+
+  async function enviar(e) {
+    e.preventDefault()
+    setSalvando(true); setErro(null)
+    const { error } = await prog().rpc('trocar_combinacao_linha', { p_id: r.id, p_sku_bobina: bob, p_sku_cliche: cli })
+    setSalvando(false)
+    if (error) { setErro(error.message); return }
+    const mudouCliche = cli !== (r.sku_cliche ?? '')
+    onSalvo(`${r.material}: bobina ${bob} · clichê ${cli}.${mudouCliche ? ' Confira se o clichê novo está disponível: a marcação de disponibilidade da linha foi mantida.' : ''}`)
+  }
+
+  return (
+    <div className="alin-bg" onClick={onFechar}>
+      <form className="alin" style={{ width: 'min(680px, 94vw)', maxWidth: 'none' }} role="dialog" aria-modal="true" aria-labelledby="troc-t" onClick={(e) => e.stopPropagation()} onSubmit={enviar}>
+        <div>
+          <h2 id="troc-t">Trocar bobina e clichê</h2>
+          <div style={{ fontSize: 13, color: '#5A6675', marginTop: 2 }}>{[r.op && 'OP ' + r.op, r.material].filter(Boolean).join(' · ')} — {String(r.material_descricao ?? '').replace(/\s+/g, ' ')}</div>
+        </div>
+        {erro && <div className="msg err" role="alert">{erro}</div>}
+        {combos === null && !erro && <div className="sub">Carregando combinações…</div>}
+        {combos && (
+          <div role="radiogroup" aria-label="Combinações do material" style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: '45vh', overflow: 'auto' }}>
+            {combos.map((c) => {
+              const v = `${c.sku_bobina}|${c.sku_cliche}`
+              const atual = c.sku_bobina === r.sku_bobina && c.sku_cliche === r.sku_cliche
+              return (
+                <label key={v} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', border: '1px solid ' + (sel === v ? '#1F5FBF' : '#DDE1E7'), background: sel === v ? '#EEF3FB' : '#fff', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', fontSize: 13 }}>
+                  <input type="radio" name="comb" checked={sel === v} onChange={() => setSel(v)} />
+                  <span>Bobina <b className="mono">{c.sku_bobina}</b></span>
+                  <span>Clichê <b className="mono">{c.sku_cliche}</b></span>
+                  {c.papel_tipo && <span style={{ color: '#5A6675' }}>{c.papel_tipo}</span>}
+                  {c.rotulo && <span style={{ color: '#5A6675' }}>{String(c.rotulo).replace(/\s+/g, ' ')}</span>}
+                  <span style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    {atual && <span className="badge b-info">ATUAL</span>}
+                    {c.mais_recente && <span className="badge b-ok">MAIS RECENTE</span>}
+                    {c.cliche_status === 'obsoleto' && <span className="badge b-warn">clichê obsoleto</span>}
+                    {!c.cliche_cadastrado && <span className="badge b-warn">fora do catálogo</span>}
+                    <span style={{ color: '#5A6675' }}>último uso {fmtD2(c.ultimo_uso)} · {c.usos} uso(s)</span>
+                  </span>
+                </label>
+              )
+            })}
+            <label style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', border: '1px solid ' + (usaOutra ? '#1F5FBF' : '#DDE1E7'), background: usaOutra ? '#EEF3FB' : '#fff', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', fontSize: 13 }}>
+              <input type="radio" name="comb" checked={usaOutra} onChange={() => setSel('outra')} />
+              <span>Outra combinação (ainda não cadastrada)</span>
+              {usaOutra && (
+                <>
+                  <input placeholder="SKU Bobina" style={{ width: 130 }} value={outra.bob} onChange={(e) => setOutra({ ...outra, bob: e.target.value })} autoFocus />
+                  <input placeholder="SKU Clichê" style={{ width: 130 }} value={outra.cli} onChange={(e) => setOutra({ ...outra, cli: e.target.value })} />
+                </>
+              )}
+            </label>
+          </div>
+        )}
+        <div style={{ fontSize: 12, color: '#5A6675' }}>A linha passa a usar a bobina, o clichê, a camisa e as cores da combinação escolhida. O papel segue a combinação. A marcação de disponibilidade do clichê da linha é mantida: confira se o clichê novo está disponível.</div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button type="button" className="btn" disabled={salvando} onClick={onFechar}>Cancelar</button>
+          <button className="btn primary" disabled={salvando || igual || !bob || !cli}>{salvando ? 'Salvando…' : 'Trocar'}</button>
+        </div>
+      </form>
+    </div>
   )
 }
 
@@ -513,7 +606,7 @@ function DataCell({ r, editavel, onSave }) {
   )
 }
 
-export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar, podeExcluir, semArrastar }) {
+export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar, abrirTrocar, podeExcluir, semArrastar }) {
   const cores = Array.isArray(r.cores) ? r.cores : []
   const slot = (n) => cores.find((c) => Number(c.posicao) === n)
   const cliOk = r.cliche_disponivel !== false
@@ -536,8 +629,8 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar
             {r.material}
           </div>
           <div className="c s4"><span title={nomeCli}>{nomeCli}</span></div>
-          <div className="c mono">{r.sku_bobina ?? '—'}</div>
-          <div className="c mono">{r.sku_cliche ?? '—'}{r.cliche_obsoleto && <span title="Clichê OBSOLETO: a última versão na aba DADOS está como obsoleta" aria-label="Clichê obsoleto" style={{ color: '#B45309', marginLeft: 3 }}>⚠</span>}</div>
+          <div className="c mono">{abrirTrocar ? <button type="button" className="trocar" title="Trocar a bobina e o clichê desta linha" onClick={() => abrirTrocar(r)}>{r.sku_bobina ?? '—'}</button> : (r.sku_bobina ?? '—')}</div>
+          <div className="c mono">{abrirTrocar ? <button type="button" className="trocar" title="Trocar a bobina e o clichê desta linha" onClick={() => abrirTrocar(r)}>{r.sku_cliche ?? '—'}</button> : (r.sku_cliche ?? '—')}{r.cliche_obsoleto && <span title="Clichê OBSOLETO: a última versão na aba DADOS está como obsoleta" aria-label="Clichê obsoleto" style={{ color: '#B45309', marginLeft: 3 }}>⚠</span>}</div>
           <div className="c edit">
             {cliOk
               ? <svg width="14" height="14" viewBox="0 0 14 14" role="img" aria-label="Clichê disponível" style={{ color: '#0F7A3E' }}><path d="M2.5 7.5l3 3 6-6.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
