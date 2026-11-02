@@ -92,6 +92,10 @@ export default function Fila({ perfil }) {
   const [okMsg, setOkMsg] = useState(null)
   const [salvandoHist, setSalvandoHist] = useState(false)
   const [alinhar, setAlinhar] = useState(null) // linha cuja data de ruptura está sendo alinhada
+  const [showItem, setShowItem] = useState(false)
+  const [materiais, setMateriais] = useState(null)
+  const [item, setItem] = useState({ material: '', data: '', m: '', bob: '', op: '', rup: '', obs: '' })
+  const [salvandoItem, setSalvandoItem] = useState(false)
   const [busca, setBusca] = useState('') // material, OP, cliente, SKU ou dd/mm
   const [dataFiltro, setDataFiltro] = useState('') // dia (yyyy-mm-dd)
 
@@ -154,6 +158,35 @@ export default function Fila({ perfil }) {
     })
     if (error) { setErro('Não foi possível inserir: ' + error.message); return }
     setNovo({ data: '', ini: '', fim: '', desc: '' }); setShowNew(false)
+    await carregar()
+  }
+
+  async function abrirItem() {
+    setShowItem(!showItem)
+    if (materiais === null) {
+      const { data } = await supabase.schema('cadastro').from('material').select('material,descricao').order('material')
+      setMateriais(data || [])
+    }
+  }
+
+  async function inserirItem(e) {
+    e.preventDefault()
+    const mat = item.material.trim().split(/\s+/)[0].toUpperCase()
+    if (!mat) { setErro('Informe o material'); return }
+    const jaNaFila = (rows || []).some((r) => r.tipo === 'op' && r.material === mat)
+    if (jaNaFila && !window.confirm(`O material ${mat} já está na Fila. Incluir outra linha dele mesmo assim?`)) return
+    setSalvandoItem(true); setErro(null); setOkMsg(null)
+    const { error } = await prog().rpc('inserir_item_manual', {
+      p_material: mat, p_data: item.data || null, p_m_minima: Number(item.m),
+      p_bobinas: item.bob === '' ? null : Number(item.bob), p_op: item.op || null,
+      p_data_ruptura: item.rup || null, p_observacoes: item.obs || null,
+    })
+    setSalvandoItem(false)
+    if (error) { setErro('Não foi possível incluir: ' + error.message); return }
+    setItem({ material: '', data: '', m: '', bob: '', op: '', rup: '', obs: '' })
+    setShowItem(false)
+    setOkMsg(`Item ${mat} incluído na Fila${item.data ? ' em ' + fmtD(item.data) : ' (sem data, no fim)'}.`)
+    setBusca(''); setDataFiltro('')
     await carregar()
   }
 
@@ -272,7 +305,8 @@ export default function Fila({ perfil }) {
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <button className="btn" onClick={carregar}>Atualizar</button>
-          {ehController && <button className="btn" onClick={() => setShowNew(!showNew)}>+ Linha manual</button>}
+          {ehController && <button className="btn" aria-expanded={showItem} onClick={abrirItem} title="Incluir na Fila um material que ainda não apareceu na Análise PCP">+ Item de produção</button>}
+          {ehController && <button className="btn" onClick={() => setShowNew(!showNew)} title="Limpeza, manutenção, dia extra...">+ Linha manual</button>}
           {ehController && <button className="btn primary" aria-expanded={showHist} onClick={() => setShowHist(!showHist)} title="Escolher os dias que vão para o Histórico e saem da Fila">Salvar no Histórico</button>}
         </div>
       </header>
@@ -307,6 +341,26 @@ export default function Fila({ perfil }) {
             </>
           )}
         </section>
+      )}
+
+      {ehController && showItem && (
+        <form onSubmit={inserirItem} className="filtro-fila" aria-label="Incluir item de produção">
+          <div style={{ flexBasis: '100%', fontSize: 13, color: '#5A6675' }}>
+            Inclui um material na Fila sem passar pela Análise PCP. Cliente, clichê e papel vêm do cadastro do material. Com data, o item entra depois da última linha daquele dia; sem data, vai para o fim da Fila.
+          </div>
+          <label className="fld" style={{ flex: '1 1 240px' }}>Material *
+            <input required list="lista-materiais" placeholder="Ex.: 209831B" value={item.material} onChange={(e) => setItem({ ...item, material: e.target.value })} autoComplete="off" />
+            <datalist id="lista-materiais">{(materiais || []).map((m) => <option key={m.material} value={m.material}>{m.descricao}</option>)}</datalist>
+          </label>
+          <label className="fld">Data de produção<input type="date" value={item.data} onChange={(e) => setItem({ ...item, data: e.target.value })} /></label>
+          <label className="fld">M. Linear mínima *<input required type="number" min="1" style={{ width: 130 }} value={item.m} onChange={(e) => setItem({ ...item, m: e.target.value })} /></label>
+          <label className="fld">Bobinas<input type="number" min="0" style={{ width: 90 }} value={item.bob} onChange={(e) => setItem({ ...item, bob: e.target.value })} /></label>
+          <label className="fld">OP (SAP)<input style={{ width: 120 }} value={item.op} onChange={(e) => setItem({ ...item, op: e.target.value })} /></label>
+          <label className="fld">Data de ruptura<input type="date" value={item.rup} onChange={(e) => setItem({ ...item, rup: e.target.value })} /></label>
+          <label className="fld" style={{ flex: '1 1 220px' }}>Observações<input value={item.obs} onChange={(e) => setItem({ ...item, obs: e.target.value })} /></label>
+          <button className="btn primary" disabled={salvandoItem}>{salvandoItem ? 'Incluindo…' : 'Incluir na Fila'}</button>
+          <button type="button" className="btn" onClick={() => setShowItem(false)}>Cancelar</button>
+        </form>
       )}
 
       {showNew && (
