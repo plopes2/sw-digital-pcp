@@ -278,11 +278,11 @@ function TabelaMto({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
                   {x.status_data && (
                     <>
                       <span className={'badge ' + sdTom}>{x.status_data}</span>
-                      {x.dif_dias != null && <span style={{ fontSize: 11, color: '#5A6675' }}>BI − Fila: {x.dif_dias > 0 ? '+' : ''}{x.dif_dias} d</span>}
+                      {x.dif_dias != null && <span style={{ fontSize: 12.5, color: '#5A6675' }}>BI − Fila: {x.dif_dias > 0 ? '+' : ''}{x.dif_dias} d</span>}
                     </>
                   )}
                 </div>
-                <div className="ap-c" style={{ flexWrap: 'wrap', gap: 4 }}>
+                <div className="ap-c" style={{ flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', gap: 3 }}>
                   {x.status_qtd && <span className={'badge ' + sqTom}>{x.status_qtd}</span>}
                   {x.refugo_pct != null && Number(x.refugo_pct) > 0 && <span className="ap-tag" title={`Necessidade base ${fmtN(x.refugo_base_m)} m`}>acréscimo {fmtP(x.refugo_pct)}%</span>}
                 </div>
@@ -342,7 +342,7 @@ function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
                 <div className="ap-c ap-n mono" style={{ fontWeight: 500 }}>{fmtN(x.produzir_m)}</div>
                 <div className="ap-c ap-n mono">{fmtN(x.programado_m)}</div>
                 <div className="ap-c ap-n mono" style={{ color: dl == null || dl === 0 ? '#1B2430' : '#74460A', textAlign: 'right' }}>{deltaTxt(x)}</div>
-                <div className="ap-c" style={{ flexWrap: 'wrap', gap: 4 }}>
+                <div className="ap-c" style={{ flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', gap: 3 }}>
                   {x.status_qtd && <span className={'badge ' + TOM[tomQtd(x.status_qtd)]}>{x.status_qtd}</span>}
                   {x.refugo_pct != null && Number(x.refugo_pct) > 0 && <span className="ap-tag" title={`Necessidade base ${fmtN(x.refugo_base_m)} m`}>acréscimo {fmtP(x.refugo_pct)}%</span>}
                 </div>

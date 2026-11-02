@@ -161,11 +161,11 @@ button.navfoot:hover .avatar{box-shadow:0 0 0 2px #1F5FBF}
 .ap-chip.on{background:#1B2430;border-color:#1B2430;color:#FFFFFF}
 .ap-tag{font-size:11px;color:#3B4756;border:1px dashed #8FAEE0;border-radius:4px;padding:0 5px;white-space:nowrap}
 .ap-wrap{container-type:inline-size;overflow-x:auto;border:1px solid #DDE1E7;border-radius:10px;background:#FFFFFF}
-.ap-t{min-width:1420px}
-.ap-t.mts{min-width:1414px}
+.ap-t{min-width:1450px}
+.ap-t.mts{min-width:1440px}
 .ap-r{display:grid}
-.ap-mto{grid-template-columns:100px 190px 100px 104px 112px 150px 104px 200px 210px 116px}
-.ap-mts{grid-template-columns:96px 170px 92px 92px 92px 88px 88px 110px 92px 92px 120px 170px 112px}
+.ap-mto{grid-template-columns:minmax(96px,.8fr) minmax(190px,1.2fr) minmax(100px,.8fr) minmax(100px,.8fr) minmax(104px,.8fr) minmax(140px,1fr) minmax(104px,.8fr) minmax(230px,1.7fr) minmax(230px,1.7fr) minmax(130px,.9fr)}
+.ap-mts{grid-template-columns:minmax(90px,.8fr) minmax(160px,1.2fr) minmax(84px,.7fr) minmax(88px,.7fr) minmax(88px,.7fr) minmax(80px,.6fr) minmax(80px,.6fr) minmax(120px,.9fr) minmax(88px,.7fr) minmax(88px,.7fr) minmax(120px,.9fr) minmax(230px,1.7fr) minmax(124px,.9fr)}
 .ap-r>.ap-c:last-child{position:sticky;right:0;background:inherit;z-index:1}
 .ap-h{background:#1B2430;color:#FFFFFF;font-size:12px;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
 .ap-h .ap-c{padding:9px 10px;border-bottom:0}
@@ -183,3 +183,7 @@ button.navfoot:hover .avatar{box-shadow:0 0 0 2px #1F5FBF}
 .alin h2{margin:0;font-size:17px;font-weight:600}
 .alin .fld input{width:100%}
 .alin-btn{border:0;background:none;padding:0;font:inherit;font-size:10px;line-height:12px;color:#1F5FBF;cursor:pointer;text-decoration:underline dotted #8FAEE0}
+
+.ap-t .badge{font-size:13px;padding:4px 12px;line-height:18px;white-space:normal;border-radius:14px}
+.ap-t .btn.sm{min-height:40px;padding:0 20px;font-size:14px;font-weight:600}
+.ap-t .ap-tag{font-size:12px;padding:1px 7px}
