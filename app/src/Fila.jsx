@@ -90,6 +90,7 @@ export default function Fila({ perfil }) {
   const [diasSel, setDiasSel] = useState([])
   const [okMsg, setOkMsg] = useState(null)
   const [salvandoHist, setSalvandoHist] = useState(false)
+  const [alinhar, setAlinhar] = useState(null) // linha cuja data de ruptura está sendo alinhada
 
   const carregar = useCallback(async () => {
     const [f, o] = await Promise.all([
@@ -347,14 +348,75 @@ export default function Fila({ perfil }) {
                     </Sortable>
                   )
                 }
-                return <LinhaOp key={it.r.id} r={it.r} ehController={ehController} podeOp={podeOp} salvar={salvar} excluir={excluirOp} />
+                return <LinhaOp key={it.r.id} r={it.r} ehController={ehController} podeOp={podeOp} salvar={salvar} excluir={excluirOp} abrirAlinhar={ehController ? setAlinhar : undefined} />
               })}
             </SortableContext>
           </DndContext>
           {rows && rows.length === 0 && <div className="loading">A fila está vazia.</div>}
         </div>
       </section>
+
+      {alinhar && <AlinharModal r={alinhar} onFechar={() => setAlinhar(null)} onSalvo={async () => { setAlinhar(null); await carregar() }} />}
     </>
+  )
+}
+
+/* ---------- alinhamento da data de ruptura (Controller) ---------- */
+function AlinharModal({ r, onFechar, onSalvo }) {
+  const hoje = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+  const [f, setF] = useState({ data: r.data_ruptura ?? '', em: r.alinhado_em ?? hoje, por: r.alinhado_por ?? '', com: r.alinhado_com ?? '' })
+  const [erro, setErro] = useState(null)
+  const [salvando, setSalvando] = useState(false)
+
+  useEffect(() => {
+    const fechar = (e) => { if (e.key === 'Escape') onFechar() }
+    window.addEventListener('keydown', fechar)
+    return () => window.removeEventListener('keydown', fechar)
+  }, [onFechar])
+
+  async function enviar(e) {
+    e.preventDefault()
+    setSalvando(true); setErro(null)
+    const { error } = await prog().rpc('registrar_alinhamento', {
+      p_linha_id: r.id,
+      p_data_ruptura: f.data || null,
+      p_alinhado_em: f.em || null,
+      p_alinhado_por: f.por,
+      p_alinhado_com: f.com,
+    })
+    setSalvando(false)
+    if (error) { setErro(error.message); return }
+    onSalvo()
+  }
+
+  const nome = [r.op && 'OP ' + r.op, r.material].filter(Boolean).join(' · ')
+  return (
+    <div className="alin-bg" onClick={onFechar}>
+      <form className="alin" role="dialog" aria-modal="true" aria-labelledby="alin-t" onClick={(e) => e.stopPropagation()} onSubmit={enviar}>
+        <div>
+          <h2 id="alin-t">Alinhar data de ruptura</h2>
+          <div style={{ fontSize: 13, color: '#5A6675', marginTop: 2 }}>{nome}</div>
+        </div>
+        {erro && <div className="msg err" role="alert">{erro}</div>}
+        <label className="fld">Data de ruptura alinhada
+          <input type="date" required value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} />
+        </label>
+        <label className="fld">Data do alinhamento
+          <input type="date" required value={f.em} onChange={(e) => setF({ ...f, em: e.target.value })} />
+        </label>
+        <label className="fld">Quem alinhou
+          <input required placeholder="Nome de quem fez o alinhamento" value={f.por} onChange={(e) => setF({ ...f, por: e.target.value })} />
+        </label>
+        <label className="fld">Com quem alinhou
+          <input required placeholder="CS, vendedor ou cliente" value={f.com} onChange={(e) => setF({ ...f, com: e.target.value })} />
+        </label>
+        <div style={{ fontSize: 12, color: '#5A6675' }}>A data fica em preto na Fila e a Análise PCP passa a conferir se o BI muda depois deste registro.</div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button type="button" className="btn" disabled={salvando} onClick={onFechar}>Cancelar</button>
+          <button className="btn primary" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar alinhamento'}</button>
+        </div>
+      </form>
+    </div>
   )
 }
 
@@ -403,7 +465,7 @@ function DataCell({ r, editavel, onSave }) {
   )
 }
 
-export function LinhaOp({ r, ehController, podeOp, salvar, excluir }) {
+export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar }) {
   const cores = Array.isArray(r.cores) ? r.cores : []
   const slot = (n) => cores.find((c) => Number(c.posicao) === n)
   const cliOk = r.cliche_disponivel !== false
@@ -441,7 +503,12 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir }) {
           <div className="c mono slot">
             <span className={rupCls}>{fmtD(r.data_ruptura)}</span>
             {r.data_ruptura && r.ruptura_alinhada && (
-              <span className="an-tag" title={`Alinhado em ${fmtD(r.alinhado_em)}${r.alinhado_por ? ' por ' + r.alinhado_por : ''}${r.alinhado_com ? ' com ' + r.alinhado_com : ''}`}>alinhado</span>
+              abrirAlinhar
+                ? <button type="button" className="alin-btn" title={`Alinhado em ${fmtD(r.alinhado_em)}${r.alinhado_por ? ' por ' + r.alinhado_por : ''}${r.alinhado_com ? ' com ' + r.alinhado_com : ''}. Clique para editar.`} onClick={() => abrirAlinhar(r)}>alinhado</button>
+                : <span className="an-tag" title={`Alinhado em ${fmtD(r.alinhado_em)}${r.alinhado_por ? ' por ' + r.alinhado_por : ''}${r.alinhado_com ? ' com ' + r.alinhado_com : ''}`}>alinhado</span>
+            )}
+            {abrirAlinhar && !(r.data_ruptura && r.ruptura_alinhada) && (
+              <button type="button" className="alin-btn" title="Registrar o alinhamento desta data de ruptura" onClick={() => abrirAlinhar(r)}>alinhar</button>
             )}
           </div>
           <div className="c"><TextEdit value={r.observacoes} label="Observações da OP" disabled={!ehController} onSave={(v) => salvar(r.id, { observacoes: v })} /></div>

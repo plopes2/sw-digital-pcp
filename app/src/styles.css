@@ -144,3 +144,41 @@ button.navfoot:hover .avatar{box-shadow:0 0 0 2px #1F5FBF}
 .dot-lado{margin-left:auto}
 .rail:hover .dot-icone,.rail:focus-within .dot-icone{display:none}
 .navlink.on .dot{box-shadow:0 0 0 2px #1F5FBF}
+
+/* ---------- Análise PCP ---------- */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.ap-tab{min-height:44px;padding:0 22px;border-radius:8px;border:1px solid #C9CFD8;background:#FFFFFF;color:#1B2430;font:inherit;font-size:14px;font-weight:500;cursor:pointer}
+.ap-tab.on{background:#1B2430;border-color:#1B2430;color:#FFFFFF;font-weight:600}
+.ap-kpis{display:flex;flex-wrap:wrap;gap:10px}
+.ap-kpi{background:#FFFFFF;border:1px solid #DDE1E7;border-radius:10px;padding:10px 14px;min-width:140px;display:flex;flex-direction:column}
+.ap-kpi b{font-size:24px;font-weight:600}
+.ap-kpi span{font-size:12px;color:#5A6675}
+.ap-kpi.ok{background:#E1F3E8;border-color:#E1F3E8}.ap-kpi.ok b,.ap-kpi.ok span{color:#0F5F34}
+.ap-kpi.warn{background:#FFF0D1;border-color:#FFF0D1}.ap-kpi.warn b,.ap-kpi.warn span{color:#74460A}
+.ap-kpi.err{background:#FCE3E0;border-color:#FCE3E0}.ap-kpi.err b,.ap-kpi.err span{color:#9B2318}
+.ap-kpi.info{background:#E3ECFA;border-color:#E3ECFA}.ap-kpi.info b,.ap-kpi.info span{color:#173F85}
+.ap-chip{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid #C9CFD8;background:#FFFFFF;color:#1B2430;font:inherit;font-size:13px;font-weight:500;cursor:pointer}
+.ap-chip.on{background:#1B2430;border-color:#1B2430;color:#FFFFFF}
+.ap-tag{font-size:11px;color:#3B4756;border:1px dashed #8FAEE0;border-radius:4px;padding:0 5px;white-space:nowrap}
+.ap-wrap{container-type:inline-size;overflow-x:auto;border:1px solid #DDE1E7;border-radius:10px;background:#FFFFFF}
+.ap-t{min-width:1380px}
+.ap-t.mts{min-width:1700px}
+.ap-r{display:grid}
+.ap-mto{grid-template-columns:92px minmax(220px,1.8fr) 92px 96px 104px 140px 96px 190px 200px 112px}
+.ap-mts{grid-template-columns:84px minmax(280px,2fr) 108px 92px 100px 96px 96px 132px 104px 104px 170px 240px 118px}
+.ap-r>.ap-c:last-child{position:sticky;right:0;background:inherit;z-index:1}
+.ap-h{background:#1B2430;color:#FFFFFF;font-size:11px;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.ap-h .ap-c{padding:9px 10px;border-bottom:0}
+.ap-b{background:#FFFFFF}
+.ap-c{padding:8px 10px;border-bottom:1px solid #EDF0F4;display:flex;align-items:center;font-size:12.5px;min-width:0;box-sizing:border-box}
+.ap-c.mono{font-size:12px}
+.ap-c.ap-n{justify-content:flex-end;text-align:right}
+.ap-painel{position:sticky;left:0;width:100cqw;box-sizing:border-box;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;padding:12px 14px;background:#F4F5F7;border-bottom:1px solid #DDE1E7;border-left:3px solid #1F5FBF}
+.ap-painel .fld input{width:96px}
+
+/* ---------- Alinhamento da data de ruptura ---------- */
+.alin-bg{position:fixed;inset:0;z-index:60;background:rgba(27,36,48,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.alin{width:100%;max-width:420px;background:#fff;border-radius:12px;box-shadow:0 12px 40px rgba(27,36,48,.3);padding:20px;display:flex;flex-direction:column;gap:12px}
+.alin h2{margin:0;font-size:17px;font-weight:600}
+.alin .fld input{width:100%}
+.alin-btn{border:0;background:none;padding:0;font:inherit;font-size:10px;line-height:12px;color:#1F5FBF;cursor:pointer;text-decoration:underline dotted #8FAEE0}
