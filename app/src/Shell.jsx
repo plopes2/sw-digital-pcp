@@ -19,7 +19,8 @@ const ICONS = {
   Consultar: 'M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM13.2 13.2L17 17',
   'Usuários e logs': 'M7.5 4a3 3 0 100 6 3 3 0 000-6zM2 16.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5',
 }
-const MENU = ['Painel', 'Análise PCP', 'Fila', 'Supply', 'Dados', 'Cadastros', 'Histórico', 'Consultar', 'Usuários e logs']
+const MENU = ['Painel', 'Consultar', 'Fila', 'Histórico', 'Análise PCP', 'Supply', 'Dados', 'Cadastros', 'Usuários e logs']
+const ROTULO = { Cadastros: 'Cadastro clientes' } // nome exibido no menu (a chave interna continua Cadastros)
 const PERFIL = { controller: 'Controller', operacao: 'Operação', consultor: 'Consultor' }
 
 export default function Shell({ session, usuario }) {
@@ -59,7 +60,7 @@ export default function Shell({ session, usuario }) {
           {MENU.map((m) => (
             <button key={m} className={'navlink' + (m === pagina ? ' on' : '')} disabled={!disponiveis[m]} title={disponiveis[m] ? '' : (m === 'Usuários e logs' || m === 'Análise PCP') ? 'Somente Controller' : 'Em breve'} onClick={() => setPagina(m)}>
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={ICONS[m]} /></svg>
-              <span className="navlbl">{m}</span>
+              <span className="navlbl">{ROTULO[m] ?? m}</span>
               {m === 'Usuários e logs' && pendentes > 0 && (
                 <>
                   <span className="dot dot-icone" role="status" aria-label={`${pendentes} aprovação(ões) pendente(s)`} title={`${pendentes} aprovação(ões) pendente(s)`} />
