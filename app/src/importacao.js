@@ -1,4 +1,5 @@
 import readXlsxFile from 'read-excel-file/browser'
+import { repararArquivo } from './repararXlsx.js'
 
 /* ------------------------------------------------------------------
  * Definição de cada tipo de carga: colunas esperadas (com apelidos) e regras.
@@ -131,9 +132,9 @@ export async function lerArquivo(file, tipo) {
 
   let planilhas
   try {
-    planilhas = await readXlsxFile(file)
+    planilhas = await readXlsxFile(await repararArquivo(file))
   } catch (e) {
-    throw new Error('Não consegui abrir o arquivo. Ele precisa ser .xlsx (Excel).')
+    throw new Error(`Não consegui abrir o arquivo. Ele precisa ser .xlsx (Excel). (detalhe técnico: ${e?.message || e})`)
   }
 
   // procura, em todas as abas, a linha de cabeçalho que contém as colunas obrigatórias

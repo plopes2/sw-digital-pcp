@@ -1,5 +1,6 @@
 import readXlsxFile from 'read-excel-file/browser'
 import { normCab } from './importacao.js'
+import { repararArquivo } from './repararXlsx.js'
 import { supabase } from './supabase.js'
 
 const vazio = (v) => v === null || v === undefined || (typeof v === 'string' && v.trim() === '')
@@ -22,7 +23,7 @@ const numero = (v) => {
  */
 export async function lerDadosCliches(file) {
   let planilhas
-  try { planilhas = await readXlsxFile(file) } catch { throw new Error('Não consegui abrir o arquivo. Envie a planilha de Programação (.xlsm ou .xlsx).') }
+  try { planilhas = await readXlsxFile(await repararArquivo(file)) } catch (e) { throw new Error(`Não consegui abrir o arquivo. Envie a planilha de Programação (.xlsm ou .xlsx). (detalhe técnico: ${e?.message || e})`) }
   const aba = planilhas.find((p) => normCab(p.sheet) === 'dados')
   if (!aba) throw new Error('Não encontrei a aba "DADOS" nesse arquivo.')
   const dados = aba.data
