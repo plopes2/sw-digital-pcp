@@ -59,19 +59,20 @@ function TextEdit({ value, onSave, disabled, className = '', placeholder, label,
   )
 }
 
-function NumEdit({ value, onSave, disabled, min = 0, label }) {
+function NumEdit({ value, onSave, disabled, min = 0, label, wide = false, step }) {
   const [v, setV] = useState(value ?? '')
   useEffect(() => setV(value ?? ''), [value])
   return (
     <input
-      className="opin num mono"
+      className={'opin num mono' + (wide ? ' wide' : '')}
       type="number"
       min={min}
+      step={step}
       value={v}
       aria-label={label}
       disabled={disabled}
       onChange={(e) => setV(e.target.value)}
-      onBlur={() => { const n = v === '' ? null : Number(v); if (n !== (value ?? null)) onSave(n) }}
+      onBlur={() => { const n = v === '' ? null : Number(v); if (n !== (value ?? null) && onSave(n) === false) setV(value ?? '') }}
       onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
     />
   )
@@ -668,9 +669,17 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar
             )}
           </div>
           <div className="c"><TextEdit value={r.observacoes} label="Observações da OP" disabled={!ehController} onSave={(v) => salvar(r.id, { observacoes: v })} /></div>
-          <div className="c mono" style={{ justifyContent: 'flex-end', fontWeight: 500 }}>{num(r.m_minima)}</div>
+          <div className="c mono" style={{ justifyContent: 'flex-end', fontWeight: 500 }}>
+            {ehController && salvar
+              ? <NumEdit wide step="any" min={1} value={r.m_minima == null ? null : Number(r.m_minima)} label="M. Linear mínima (m)" onSave={(n) => { if (n == null || !(n > 0)) return false; salvar(r.id, { m_minima: n }) }} />
+              : num(r.m_minima)}
+          </div>
           <div className="c mono" style={{ justifyContent: 'flex-end' }}>{num(r.volume_m2, 1)}</div>
-          <div className="c mono">{r.bobinas ?? '—'}</div>
+          <div className="c mono">
+            {ehController && salvar
+              ? <NumEdit value={r.bobinas} label="Bobinas" onSave={(n) => { if (n != null && (!Number.isInteger(n) || n < 0)) return false; salvar(r.id, { bobinas: n }) }} />
+              : (r.bobinas ?? '—')}
+          </div>
           <div className="c mono">{r.papel_codigo ?? '—'}</div>
           <div className="c">
             {faltaPapel ? <span className="badge b-err">FALTA PAPEL</span> : <span style={{ color: '#5A6675' }}>em estoque</span>}

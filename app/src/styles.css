@@ -266,3 +266,4 @@ button.navfoot:hover .avatar{box-shadow:0 0 0 2px #1F5FBF}
 .cs-late{background:#FCE3E0;color:#9B2318;font-weight:600;padding:1px 6px;border-radius:4px}
 .cs-legenda{display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center;font-size:13px;color:#3B4756;background:#fff;border:1px solid #DDE1E7;border-radius:10px;padding:12px 16px}
 .cs-head .cs-num{font-family:inherit;font-size:inherit}
+.opin.num.wide{width:100%;text-align:right}
