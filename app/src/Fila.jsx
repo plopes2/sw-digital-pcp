@@ -12,6 +12,8 @@ const WD = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const parts = (s) => (s ? String(s).slice(0, 10).split('-').map(Number) : null)
 const fmtD = (s) => { const p = parts(s); return p ? String(p[2]).padStart(2, '0') + '/' + String(p[1]).padStart(2, '0') : '—' }
 const hhmm = (s) => (s ? String(s).slice(0, 5) : '—')
+// M. Linear no formato de milhar com ponto (160.000)
+const fmtM = (v) => (v == null || v === '' ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 }))
 const num = (v, d = 0) => (v == null || v === '' ? '—' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d }))
 const weekday = (s) => { const p = parts(s); return WD[new Date(p[0], p[1] - 1, p[2]).getDay()] }
 const fmtH = (v) => num(v, 1)
@@ -96,20 +98,23 @@ export default function Fila({ perfil }) {
   const [salvandoHist, setSalvandoHist] = useState(false)
   const [alinhar, setAlinhar] = useState(null) // linha cuja data de ruptura está sendo alinhada
   const [trocar, setTrocar] = useState(null) // linha cuja bobina/clichê está sendo trocada
+  const [metragem, setMetragem] = useState(null) // linha cuja M. Linear/Bobinas está sendo editada
   const [showItem, setShowItem] = useState(false)
   const [busca, setBusca] = useState('') // material, OP, cliente, SKU ou dd/mm
   const [dataFiltro, setDataFiltro] = useState('') // dia (yyyy-mm-dd)
 
   const carregar = useCallback(async () => {
-    const [f, o, ob] = await Promise.all([
+    const [f, o, ob, mn] = await Promise.all([
       prog().from('fila_calculada').select('*').order('ordem'),
       prog().from('ocupacao_dia').select('*').order('data'),
       supabase.schema('cadastro').from('cliche_vigente').select('sku_cliche').eq('status', 'obsoleto'),
+      prog().from('fila_linha').select('id').eq('bobinas_manual', true),
     ])
     if (f.error) { setErro(f.error.message); return }
     setErro(null)
     const obsoletos = new Set((ob.data || []).map((c) => c.sku_cliche))
-    setRows(f.data.map((r) => (r.sku_cliche && obsoletos.has(r.sku_cliche) ? { ...r, cliche_obsoleto: true } : r)))
+    const manuais = new Set((mn.data || []).map((x) => x.id))
+    setRows(f.data.map((r) => ({ ...r, ...(r.sku_cliche && obsoletos.has(r.sku_cliche) ? { cliche_obsoleto: true } : {}), bobinas_manual: manuais.has(r.id) })))
     const m = {}
     ;(o.data || []).forEach((d) => { m[d.data] = d })
     setOcup(m)
@@ -412,7 +417,7 @@ export default function Fila({ perfil }) {
                     </Sortable>
                   )
                 }
-                return <LinhaOp key={it.r.id} r={it.r} ehController={ehController} semArrastar={filtrando} podeOp={podeOp} salvar={salvar} excluir={excluirOp} abrirAlinhar={ehController ? setAlinhar : undefined} abrirTrocar={ehController ? setTrocar : undefined} />
+                return <LinhaOp key={it.r.id} r={it.r} ehController={ehController} semArrastar={filtrando} podeOp={podeOp} salvar={salvar} excluir={excluirOp} abrirAlinhar={ehController ? setAlinhar : undefined} abrirTrocar={ehController ? setTrocar : undefined} abrirMetragem={ehController ? setMetragem : undefined} />
               })}
             </SortableContext>
           </DndContext>
@@ -421,6 +426,7 @@ export default function Fila({ perfil }) {
       </section>
 
       {alinhar && <AlinharModal r={alinhar} onFechar={() => setAlinhar(null)} onSalvo={async () => { setAlinhar(null); await carregar() }} />}
+      {metragem && <MetragemModal r={metragem} onFechar={() => setMetragem(null)} onSalvo={async () => { setMetragem(null); await carregar() }} />}
       {trocar && <TrocarCombinacaoModal r={trocar} onFechar={() => setTrocar(null)} onSalvo={async (msg) => { setTrocar(null); setOkMsg(msg); await carregar() }} />}
     </div>
   )
@@ -576,6 +582,68 @@ function AlinharModal({ r, onFechar, onSalvo }) {
   )
 }
 
+/* Editar M. Linear mínima e Bobinas. Bobinas = M. Linear ÷ 8.000 (para cima) enquanto ninguém digitar a bobina;
+   digitou → fica manual (sem cálculo) até clicar em "Voltar ao cálculo automático". O cálculo real é do banco (gatilho). */
+const METROS_POR_BOBINA = 8000
+function MetragemModal({ r, onFechar, onSalvo }) {
+  const [m, setM] = useState(r.m_minima == null ? '' : String(Number(r.m_minima)))
+  const [manual, setManual] = useState(!!r.bobinas_manual)
+  const [b, setB] = useState(r.bobinas == null ? '' : String(r.bobinas))
+  const [erro, setErro] = useState(null)
+  const [salvando, setSalvando] = useState(false)
+  const mNum = Number(m)
+  const auto = mNum > 0 ? Math.ceil(mNum / METROS_POR_BOBINA) : null
+
+  useEffect(() => {
+    const fechar = (e) => { if (e.key === 'Escape') onFechar() }
+    window.addEventListener('keydown', fechar)
+    return () => window.removeEventListener('keydown', fechar)
+  }, [onFechar])
+
+  async function enviar(e) {
+    e.preventDefault()
+    if (!(mNum > 0)) { setErro('Informe a M. Linear mínima (maior que zero)'); return }
+    let patch = { m_minima: mNum, bobinas_manual: false }
+    if (manual) {
+      const bn = Number(b)
+      if (b === '' || !Number.isInteger(bn) || bn < 0) { setErro('Bobinas deve ser um número inteiro (0 ou mais)'); return }
+      patch = { m_minima: mNum, bobinas: bn, bobinas_manual: true }
+    }
+    setSalvando(true); setErro(null)
+    const { error } = await prog().from('fila_linha').update(patch).eq('id', r.id)
+    setSalvando(false)
+    if (error) { setErro('Não foi possível salvar: ' + error.message); return }
+    onSalvo()
+  }
+
+  const nome = [r.op && 'OP ' + r.op, r.material].filter(Boolean).join(' · ')
+  return (
+    <div className="alin-bg" onClick={onFechar}>
+      <form className="alin" role="dialog" aria-modal="true" aria-labelledby="met-t" onClick={(e) => e.stopPropagation()} onSubmit={enviar}>
+        <div>
+          <h2 id="met-t">Editar M. Linear e Bobinas</h2>
+          <div style={{ fontSize: 13, color: '#5A6675', marginTop: 2 }}>{nome}</div>
+        </div>
+        {erro && <div className="msg err" role="alert">{erro}</div>}
+        <label className="fld">M. Linear mínima (m)
+          <input type="number" min="1" step="any" required autoFocus value={m} onChange={(e) => setM(e.target.value)} />
+        </label>
+        <label className="fld">Bobinas
+          <input type="number" min="0" step="1" value={manual ? b : (auto ?? '')} onChange={(e) => { setManual(true); setB(e.target.value) }} />
+        </label>
+        {manual
+          ? <div style={{ fontSize: 12, color: '#5A6675' }}>Bobinas <strong>manual</strong>: não acompanha a M. Linear.{' '}
+              <button type="button" className="trocar" onClick={() => setManual(false)}>Voltar ao cálculo automático</button>{auto != null && <> (daria {auto})</>}</div>
+          : <div style={{ fontSize: 12, color: '#5A6675' }}>Bobinas <strong>automática</strong>: M. Linear ÷ {METROS_POR_BOBINA.toLocaleString('pt-BR')}, arredondado para cima. Se digitar um valor, o cálculo é desligado só nesta linha.</div>}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button type="button" className="btn" disabled={salvando} onClick={onFechar}>Cancelar</button>
+          <button className="btn primary" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar'}</button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
 export function CabecalhoFila() {
   return (
     <>
@@ -621,7 +689,7 @@ function DataCell({ r, editavel, onSave }) {
   )
 }
 
-export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar, abrirTrocar, podeExcluir, devolver, semArrastar }) {
+export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar, abrirTrocar, abrirMetragem, podeExcluir, devolver, semArrastar }) {
   const cores = Array.isArray(r.cores) ? r.cores : []
   const slot = (n) => cores.find((c) => Number(c.posicao) === n)
   const cliOk = r.cliche_disponivel !== false
@@ -669,16 +737,18 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar
             )}
           </div>
           <div className="c"><TextEdit value={r.observacoes} label="Observações da OP" disabled={!ehController} onSave={(v) => salvar(r.id, { observacoes: v })} /></div>
-          <div className="c mono" style={{ justifyContent: 'flex-end', fontWeight: 500 }}>
-            {ehController && salvar
-              ? <NumEdit wide step="any" min={1} value={r.m_minima == null ? null : Number(r.m_minima)} label="M. Linear mínima (m)" onSave={(n) => { if (n == null || !(n > 0)) return false; salvar(r.id, { m_minima: n }) }} />
-              : num(r.m_minima)}
+          <div className="c mono grande" style={{ justifyContent: 'flex-end', gap: 4, fontWeight: 500 }}>
+            {fmtM(r.m_minima)}
+            {ehController && abrirMetragem && (
+              <button type="button" className="lapis" title="Editar M. Linear mínima e Bobinas" aria-label="Editar M. Linear mínima e Bobinas" onClick={() => abrirMetragem(r)}>
+                <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 17l1-4L14.5 2.5a1.5 1.5 0 012.1 0l.9.9a1.5 1.5 0 010 2.1L7 16z M12.5 4.5l3 3" /></svg>
+              </button>
+            )}
           </div>
-          <div className="c mono" style={{ justifyContent: 'flex-end' }}>{num(r.volume_m2, 1)}</div>
-          <div className="c mono">
-            {ehController && salvar
-              ? <NumEdit compact value={r.bobinas} label="Bobinas" onSave={(n) => { if (n != null && (!Number.isInteger(n) || n < 0)) return false; salvar(r.id, { bobinas: n }) }} />
-              : (r.bobinas ?? '—')}
+          <div className="c mono grande" style={{ justifyContent: 'flex-end' }}>{num(r.volume_m2, 1)}</div>
+          <div className="c mono grande">
+            {r.bobinas ?? '—'}
+            {r.bobinas_manual && <span className="bob-manual" title="Bobinas digitada manualmente (não acompanha a M. Linear mínima)">✎</span>}
           </div>
           <div className="c mono">{r.papel_codigo ?? '—'}</div>
           <div className="c">
