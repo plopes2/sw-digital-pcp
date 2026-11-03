@@ -7,6 +7,25 @@ const cad = () => supabase.schema('cadastro')
 
 // status que pedem ação do PCP
 const AV = ['AVALIAR', 'ALINHADO SEM REGISTRO', 'ALINHADO · BI MUDOU', 'SEM DATA']
+// ordem de avaliação (de cima para baixo): programar → ajustar data → ajustar quantidade → OK
+const ORD_DATA = ['AVALIAR', 'SEM DATA', 'ALINHADO · BI MUDOU', 'ALINHADO SEM REGISTRO']
+const ORD_QTD = ['ABAIXO', 'DIFERENÇA', 'FILA ALTERADA', 'ACIMA', 'PROGRAMADO SEM NECESSIDADE']
+const ORD_ACAO = ['PRODUZIR', 'RESSUPRIR', 'OK', 'SUPER ESTOQUE']
+const posX = (lista, v) => { const i = lista.indexOf(v); return i < 0 ? lista.length : i }
+const rankMto = (x) => {
+  if (x.status_qtd === 'CADASTRAR BOBINA KIWI') return [0, 0]
+  if (x.status_qtd === 'NÃO PROGRAMADO') return [1, 0]
+  if (ORD_DATA.includes(x.status_data)) return [2, ORD_DATA.indexOf(x.status_data)]
+  if (ORD_QTD.includes(x.status_qtd)) return [3, ORD_QTD.indexOf(x.status_qtd)]
+  return [4, 0]
+}
+const rankMts = (x) => {
+  if (x.status_qtd === 'NÃO PROGRAMADO') return [1, posX(ORD_ACAO, x.acao)]
+  if (ORD_QTD.includes(x.status_qtd)) return [3, ORD_QTD.indexOf(x.status_qtd)]
+  if (x.status_qtd === 'OK') return [4, posX(ORD_ACAO, x.acao)]
+  return [5, posX(ORD_ACAO, x.acao)]
+}
+const cmpRank = (ra, rb) => ra[0] - rb[0] || ra[1] - rb[1]
 const QD = ['ACIMA', 'ABAIXO', 'DIFERENÇA', 'FILA ALTERADA', 'PROGRAMADO SEM NECESSIDADE']
 
 /* ---------- formatação ---------- */
@@ -81,7 +100,6 @@ export default function AnalisePCP({ perfil }) {
   /* ----- MTO ----- */
   const linhasMto = useMemo(() => {
     if (!mto) return []
-    const precisa = (x) => x.status_qtd !== 'OK' || (x.status_data && AV.includes(x.status_data))
     const t = q.trim().toLowerCase()
     return mto
       .filter((x) => {
@@ -91,8 +109,8 @@ export default function AnalisePCP({ perfil }) {
         if (t && (x.material + ' ' + (x.material_descricao || '') + ' ' + (x.cliente || '')).toLowerCase().indexOf(t) < 0) return false
         return true
       })
-      .sort((a, b) => (precisa(a) ? 0 : 1) - (precisa(b) ? 0 : 1)
-        || String(a.data_critica_real).localeCompare(String(b.data_critica_real))
+      .sort((a, b) => cmpRank(rankMto(a), rankMto(b))
+        || String(a.data_critica_real || '9999').localeCompare(String(b.data_critica_real || '9999'))
         || a.material.localeCompare(b.material))
   }, [mto, filtro, q])
 
@@ -110,7 +128,6 @@ export default function AnalisePCP({ perfil }) {
   /* ----- MTS ----- */
   const linhasMts = useMemo(() => {
     if (!mts) return []
-    const precisa = (x) => (x.status_qtd ? x.status_qtd !== 'OK' : x.acao === 'PRODUZIR' || x.acao === 'RESSUPRIR')
     const t = q.trim().toLowerCase()
     return mts
       .filter((x) => {
@@ -120,7 +137,7 @@ export default function AnalisePCP({ perfil }) {
         if (t && (x.codigo + ' ' + (x.material_descricao || x.descricao || '') + ' ' + (x.cliente || '') + ' ' + (x.sku_caixa || '')).toLowerCase().indexOf(t) < 0) return false
         return true
       })
-      .sort((a, b) => (precisa(a) ? 0 : 1) - (precisa(b) ? 0 : 1) || a.codigo.localeCompare(b.codigo, 'pt-BR', { numeric: true }))
+      .sort((a, b) => cmpRank(rankMts(a), rankMts(b)) || a.codigo.localeCompare(b.codigo, 'pt-BR', { numeric: true }))
   }, [mts, filtro, q])
 
   const kpiMts = useMemo(() => {
