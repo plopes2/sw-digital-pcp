@@ -284,7 +284,7 @@ export default function Fila({ perfil }) {
   if (rows === null && !erro) return <div className="loading">Carregando fila…</div>
 
   return (
-    <>
+    <div className="pg-tabela">
       <header style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, letterSpacing: '-0.3px' }}>Fila de produção</h1>
@@ -422,7 +422,7 @@ export default function Fila({ perfil }) {
 
       {alinhar && <AlinharModal r={alinhar} onFechar={() => setAlinhar(null)} onSalvo={async () => { setAlinhar(null); await carregar() }} />}
       {trocar && <TrocarCombinacaoModal r={trocar} onFechar={() => setTrocar(null)} onSalvo={async (msg) => { setTrocar(null); setOkMsg(msg); await carregar() }} />}
-    </>
+    </div>
   )
 }
 

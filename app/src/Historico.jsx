@@ -139,7 +139,7 @@ export default function Historico({ perfil }) {
   }
 
   return (
-    <>
+    <div className="pg-tabela">
       <header style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', justifyContent: 'space-between' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, letterSpacing: '-0.3px' }}>Histórico</h1>
@@ -193,6 +193,6 @@ export default function Historico({ perfil }) {
           {linhas && !filtradas.length && !erro && <div className="loading">{busca.trim() ? 'Nada encontrado para essa busca.' : 'Nenhum histórico salvo neste período.'}</div>}
         </div>
       </section>
-    </>
+    </div>
   )
 }

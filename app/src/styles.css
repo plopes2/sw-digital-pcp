@@ -271,3 +271,7 @@ button.navfoot:hover .avatar{box-shadow:0 0 0 2px #1F5FBF}
 .opin.num.wide::-webkit-outer-spin-button,.opin.num.wide::-webkit-inner-spin-button,.opin.num.compact::-webkit-outer-spin-button,.opin.num.compact::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .opin.num.wide,.opin.num.compact{-moz-appearance:textfield;appearance:textfield}
 .opin.num.compact{width:34px;padding:2px 2px}
+/* Fila/Histórico: a tabela ocupa só o restante da altura da tela (barra horizontal sempre visível, sem rolar a página) */
+.pg-tabela{display:flex;flex-direction:column;gap:12px;height:calc(100vh - 40px);min-height:480px}
+.pg-tabela>*{flex:0 0 auto}
+.pg-tabela>.scroller{flex:1 1 auto;min-height:0;max-height:none}
