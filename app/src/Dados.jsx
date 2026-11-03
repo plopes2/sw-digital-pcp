@@ -194,6 +194,7 @@ function Avisos({ av }) {
   if (!av) return null
   const itens = []
   if (av.materiais_sem_cadastro?.length) itens.push(`${av.materiais_sem_cadastro.length} material(is) ainda sem cadastro: ${av.materiais_sem_cadastro.slice(0, 8).join(', ')}${av.materiais_sem_cadastro.length > 8 ? '…' : ''}`)
+  for (const m of av.materiais_sem_metro_linear || []) itens.push(`Material ${m} sem metro linear cadastrado — cadastrar a bobina no Kiwi`)
   if (av.papeis_sem_cadastro?.length) itens.push(`${av.papeis_sem_cadastro.length} código(s) de papel sem cadastro: ${av.papeis_sem_cadastro.slice(0, 8).join(', ')}`)
   if (!itens.length) return null
   return <ul>{itens.map((i, k) => <li key={k}>{i}</li>)}</ul>

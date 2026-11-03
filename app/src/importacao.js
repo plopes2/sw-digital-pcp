@@ -14,14 +14,15 @@ export const TIPOS = {
     campos: {
       material: { nomes: ['material'], tipo: 'texto', obrigatorio: true },
       numero_pedido: { nomes: ['numero do pedido', 'pedido'], tipo: 'texto' },
-      tipo_ordem: { nomes: ['tipo de ordem'], tipo: 'texto', obrigatorio: true },
+      // "Tipo de ordem" do BI é IGNORADO de propósito: não é lido, validado, gravado nem usado em nenhum cálculo.
       cliente: { nomes: ['cliente'], tipo: 'texto' },
       papelao: { nomes: ['papelao'], tipo: 'texto' },
       qtde_lotes: { nomes: ['lote'], tipo: 'int' },
       saldo: { nomes: ['saldo'], tipo: 'num' },
       qtde_produzida: { nomes: ['quantidade produzida'], tipo: 'num' },
       area_pedido: { nomes: ['area pedido'], tipo: 'num' },
-      m_linear: { nomes: ['m linear'], tipo: 'num', obrigatorio: true },
+      // M linear vazio NÃO bloqueia: o pedido entra e o material é avisado ("sem metro linear cadastrado" → cadastrar bobina no Kiwi)
+      m_linear: { nomes: ['m linear'], tipo: 'num' },
       data_entrega: { nomes: ['data de entrega'], tipo: 'data', obrigatorio: true },
       data_onduladeira: { nomes: ['data onduladeira'], tipo: 'data', obrigatorio: true },
       data_cadastro: { nomes: ['data de cadastro'], tipo: 'data' },
@@ -29,14 +30,8 @@ export const TIPOS = {
       status_pedido: { nomes: ['status do pedido'], tipo: 'texto', obrigatorio: true },
     },
     chave: 'material',
-    valida(l, erro) {
-      l.tipo_ordem = (l.tipo_ordem || '').toUpperCase()
-      if (!['MTO', 'MTS'].includes(l.tipo_ordem)) erro(`Tipo de ordem "${l.tipo_ordem}" inválido (esperado MTO ou MTS)`)
-    },
-    resumo: (ls) => {
-      const mto = ls.filter((l) => l.tipo_ordem === 'MTO').length
-      return `${mto} MTO · ${ls.length - mto} MTS · ${new Set(ls.map((l) => l.material)).size} materiais`
-    },
+    valida() {},
+    resumo: (ls) => `${ls.length} pedidos · ${new Set(ls.map((l) => l.material)).size} materiais`,
   },
   estoque_bobinas: {
     titulo: 'Estoque de bobinas',
@@ -196,8 +191,15 @@ export async function lerArquivo(file, tipo) {
   if (tipo === 'pedidos') {
     const semData = linhas.filter((l) => !l.data_onduladeira).length
     if (semData) avisos.push(`${semData} pedido(s) sem Data onduladeira.`)
-    const semM = linhas.filter((l) => l.m_linear === null).length
-    if (semM) avisos.push(`${semM} pedido(s) sem M linear (aparecerão como "cadastrar bobina Kiwi").`)
+    // um aviso por material sem metro linear (a análise mostra "CADASTRAR BOBINA KIWI")
+    const semM = new Map()
+    for (const l of linhas) if (l.m_linear === null) semM.set(l.material, [...(semM.get(l.material) || []), l.numero_pedido || 's/ nº'])
+    const mats = [...semM.keys()].sort()
+    for (const m of mats.slice(0, 40)) {
+      const peds = semM.get(m)
+      avisos.push(`Material ${m} sem metro linear cadastrado — cadastrar a bobina no Kiwi (${peds.length} pedido${peds.length > 1 ? 's' : ''}: ${peds.slice(0, 5).join(', ')}${peds.length > 5 ? '…' : ''})`)
+    }
+    if (mats.length > 40) avisos.push(`… e mais ${mats.length - 40} material(is) sem metro linear cadastrado.`)
   }
 
   return {
