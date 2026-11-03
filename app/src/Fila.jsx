@@ -620,7 +620,7 @@ function DataCell({ r, editavel, onSave }) {
   )
 }
 
-export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar, abrirTrocar, podeExcluir, semArrastar }) {
+export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar, abrirTrocar, podeExcluir, devolver, semArrastar }) {
   const cores = Array.isArray(r.cores) ? r.cores : []
   const slot = (n) => cores.find((c) => Number(c.posicao) === n)
   const cliOk = r.cliche_disponivel !== false
@@ -640,6 +640,7 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar
           </div>
           <div className="c s3 mono" style={{ fontWeight: 600, gap: 0, paddingLeft: 3, paddingRight: 3 }}>
             {excluir && (ehController || podeExcluir) && <button className="xbtn" style={{ color: '#B42318', padding: '0 3px 0 0' }} title={podeExcluir ? 'Excluir linha do Histórico' : 'Excluir OP da Fila'} aria-label={'Excluir OP ' + (r.op || r.material)} onClick={() => excluir(r)}>×</button>}
+            {devolver && <button className="xbtn" style={{ color: '#175CD3', padding: '0 3px 0 0' }} title="Devolver para a Fila (mesma programação)" aria-label={'Devolver OP ' + (r.op || r.material) + ' para a Fila'} onClick={() => devolver(r)}>↩</button>}
             {r.material}
           </div>
           <div className="c s4"><span title={nomeCli}>{nomeCli}</span></div>

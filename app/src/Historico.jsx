@@ -94,6 +94,16 @@ export default function Historico({ perfil }) {
     await carregar()
   }
 
+  async function devolverLinha(it) {
+    const r = it.r
+    const nome = it.k === 'manual' ? `"${r.descricao}"` : [r.op && 'OP ' + r.op, r.material].filter(Boolean).join(' · ')
+    if (!window.confirm(`Devolver ${nome} para a Fila com a mesma programação (data ${fmtBR(r.data_producao)} e demais dados)? Ela sai do Histórico.`)) return
+    setErro(null)
+    const { error } = await ac().rpc('devolver_linha_historico', { p_linha_id: it.id })
+    if (error) { setErro('Não foi possível devolver: ' + error.message); return }
+    await carregar()
+  }
+
   const [exportando, setExportando] = useState(false)
   async function exportar() {
     setExportando(true)
@@ -166,7 +176,7 @@ export default function Historico({ perfil }) {
                       <div className="c s1" />
                       <div className="c s2" style={{ gridColumn: '2 / 5', justifyContent: 'space-between' }}>
                         <span>{it.r.descricao}</span>
-                        {ehController && <button className="xbtn" style={{ color: '#14532D' }} title="Excluir linha do Histórico" aria-label="Excluir linha do Histórico" onClick={() => excluirLinha(it)}>×</button>}
+                        {ehController && <span><button className="xbtn" style={{ color: '#175CD3' }} title="Devolver para a Fila (mesma programação)" aria-label="Devolver linha para a Fila" onClick={() => devolverLinha(it)}>↩</button><button className="xbtn" style={{ color: '#14532D' }} title="Excluir linha do Histórico" aria-label="Excluir linha do Histórico" onClick={() => excluirLinha(it)}>×</button></span>}
                       </div>
                       <div className="c mono" style={{ gridColumn: 8 }}>{fmtBR(it.r.data_producao).slice(0, 5)}</div>
                       <div className="c mono" style={{ gridColumn: 9 }}>{hhmm(it.r.inicio)}</div>
@@ -174,7 +184,7 @@ export default function Historico({ perfil }) {
                     </div>
                   )
                 }
-                return <LinhaOp key={it.id} r={it.r} ehController={false} podeOp={false} salvar={noop} podeExcluir={ehController} excluir={() => excluirLinha(it)} />
+                return <LinhaOp key={it.id} r={it.r} ehController={false} podeOp={false} salvar={noop} podeExcluir={ehController} excluir={() => excluirLinha(it)} devolver={ehController ? () => devolverLinha(it) : undefined} />
               })}
             </SortableContext>
           </DndContext>
