@@ -283,3 +283,4 @@ button.navfoot:hover .avatar{box-shadow:0 0 0 2px #1F5FBF}
 .lapis:focus-visible{outline:2px solid #1F5FBF;outline-offset:1px}
 .bob-manual{margin-left:3px;font-size:10px;color:#1F5FBF;font-family:'IBM Plex Sans',system-ui,sans-serif}
 .ap-t .btn.sm{white-space:nowrap}
+.fld textarea{box-sizing:border-box;width:100%;border:1px solid #C9CFD8;border-radius:6px;padding:8px 10px;font:inherit;font-size:14px;color:#1B2430;background:#FFFFFF;resize:vertical;min-height:64px}

@@ -108,13 +108,13 @@ export default function Fila({ perfil }) {
       prog().from('fila_calculada').select('*').order('ordem'),
       prog().from('ocupacao_dia').select('*').order('data'),
       supabase.schema('cadastro').from('cliche_vigente').select('sku_cliche').eq('status', 'obsoleto'),
-      prog().from('fila_linha').select('id').eq('bobinas_manual', true),
+      prog().from('fila_linha').select('id,bobinas_manual,alinhado_obs').or('bobinas_manual.eq.true,alinhado_obs.not.is.null'),
     ])
     if (f.error) { setErro(f.error.message); return }
     setErro(null)
     const obsoletos = new Set((ob.data || []).map((c) => c.sku_cliche))
-    const manuais = new Set((mn.data || []).map((x) => x.id))
-    setRows(f.data.map((r) => ({ ...r, ...(r.sku_cliche && obsoletos.has(r.sku_cliche) ? { cliche_obsoleto: true } : {}), bobinas_manual: manuais.has(r.id) })))
+    const extra = new Map((mn.data || []).map((x) => [x.id, x]))
+    setRows(f.data.map((r) => ({ ...r, ...(r.sku_cliche && obsoletos.has(r.sku_cliche) ? { cliche_obsoleto: true } : {}), bobinas_manual: !!extra.get(r.id)?.bobinas_manual, alinhado_obs: extra.get(r.id)?.alinhado_obs ?? null })))
     const m = {}
     ;(o.data || []).forEach((d) => { m[d.data] = d })
     setOcup(m)
@@ -526,7 +526,7 @@ function TrocarCombinacaoModal({ r, onFechar, onSalvo }) {
 /* ---------- alinhamento da data de ruptura (Controller) ---------- */
 function AlinharModal({ r, onFechar, onSalvo }) {
   const hoje = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
-  const [f, setF] = useState({ data: r.data_ruptura ?? '', em: r.alinhado_em ?? hoje, por: r.alinhado_por ?? '', com: r.alinhado_com ?? '' })
+  const [f, setF] = useState({ data: r.data_ruptura ?? '', em: r.alinhado_em ?? hoje, por: r.alinhado_por ?? '', com: r.alinhado_com ?? '', obs: r.alinhado_obs ?? '' })
   const [erro, setErro] = useState(null)
   const [salvando, setSalvando] = useState(false)
 
@@ -545,6 +545,7 @@ function AlinharModal({ r, onFechar, onSalvo }) {
       p_alinhado_em: f.em || null,
       p_alinhado_por: f.por,
       p_alinhado_com: f.com,
+      p_alinhado_obs: f.obs,
     })
     setSalvando(false)
     if (error) { setErro(error.message); return }
@@ -571,6 +572,9 @@ function AlinharModal({ r, onFechar, onSalvo }) {
         </label>
         <label className="fld">Com quem alinhou
           <input required placeholder="CS, vendedor ou cliente" value={f.com} onChange={(e) => setF({ ...f, com: e.target.value })} />
+        </label>
+        <label className="fld">Observações
+          <textarea rows={3} placeholder="Opcional: motivo, combinado, detalhes do alinhamento" value={f.obs} onChange={(e) => setF({ ...f, obs: e.target.value })} />
         </label>
         <div style={{ fontSize: 12, color: '#5A6675' }}>A data fica em preto na Fila e a Análise PCP passa a conferir se o BI muda depois deste registro.</div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -729,8 +733,8 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar
             <span className={rupCls}>{fmtD(r.data_ruptura)}</span>
             {r.data_ruptura && r.ruptura_alinhada && (
               abrirAlinhar
-                ? <button type="button" className="alin-btn" title={`Alinhado em ${fmtD(r.alinhado_em)}${r.alinhado_por ? ' por ' + r.alinhado_por : ''}${r.alinhado_com ? ' com ' + r.alinhado_com : ''}. Clique para editar.`} onClick={() => abrirAlinhar(r)}>alinhado</button>
-                : <span className="an-tag" title={`Alinhado em ${fmtD(r.alinhado_em)}${r.alinhado_por ? ' por ' + r.alinhado_por : ''}${r.alinhado_com ? ' com ' + r.alinhado_com : ''}`}>alinhado</span>
+                ? <button type="button" className="alin-btn" title={`Alinhado em ${fmtD(r.alinhado_em)}${r.alinhado_por ? ' por ' + r.alinhado_por : ''}${r.alinhado_com ? ' com ' + r.alinhado_com : ''}${r.alinhado_obs ? '. Obs.: ' + r.alinhado_obs : ''}. Clique para editar.`} onClick={() => abrirAlinhar(r)}>alinhado</button>
+                : <span className="an-tag" title={`Alinhado em ${fmtD(r.alinhado_em)}${r.alinhado_por ? ' por ' + r.alinhado_por : ''}${r.alinhado_com ? ' com ' + r.alinhado_com : ''}${r.alinhado_obs ? '. Obs.: ' + r.alinhado_obs : ''}`}>alinhado</span>
             )}
             {abrirAlinhar && !(r.data_ruptura && r.ruptura_alinhada) && (
               <button type="button" className="alin-btn" title="Registrar o alinhamento desta data de ruptura" onClick={() => abrirAlinhar(r)}>alinhar</button>
