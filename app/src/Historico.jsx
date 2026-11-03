@@ -97,7 +97,7 @@ export default function Historico({ perfil }) {
   async function devolverLinha(it) {
     const r = it.r
     const nome = it.k === 'manual' ? `"${r.descricao}"` : [r.op && 'OP ' + r.op, r.material].filter(Boolean).join(' · ')
-    if (!window.confirm(`Devolver ${nome} para a Fila com a mesma programação (data ${fmtBR(r.data_producao)} e demais dados)? Ela sai do Histórico.`)) return
+    if (!window.confirm(`Devolver ${nome} para a Fila com a mesma programação (data ${fmtBR(r.data_producao)} e demais dados)? A linha continua no Histórico.`)) return
     setErro(null)
     const { error } = await ac().rpc('devolver_linha_historico', { p_linha_id: it.id })
     if (error) { setErro('Não foi possível devolver: ' + error.message); return }
