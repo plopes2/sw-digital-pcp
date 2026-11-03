@@ -20,8 +20,8 @@ a{color:#1F5FBF}a:hover{color:#174A96}
 .navlink:hover{background:#EEF1F5;color:#1B2430}
 .navlink.on{background:#1F5FBF;color:#FFFFFF;font-weight:600}
 .scroller{overflow:auto;max-height:calc(100vh - 190px);border:1px solid #DDE1E7;border-radius:10px;background:#FFFFFF;position:relative}
-.tbl{min-width:2812px}
-.g{display:grid;grid-template-columns:24px 72px 94px 260px 80px 80px 64px 62px 58px 50px 64px 170px 70px 64px 48px 100px 88px 124px 64px 64px 60px 84px 60px 44px repeat(9,96px);min-width:2812px}
+.tbl{min-width:2828px}
+.g{display:grid;grid-template-columns:24px 72px 94px 260px 80px 80px 64px 62px 58px 50px 64px 170px 86px 64px 48px 100px 88px 124px 64px 64px 60px 84px 60px 44px repeat(9,96px);min-width:2812px}
 .c{padding:5px 8px;font-size:12px;line-height:1.25;border-bottom:1px solid #EDF0F4;display:flex;align-items:center;min-width:0;box-sizing:border-box;background:inherit}
 .orow{background:#FFFFFF}
 .s1{position:sticky;left:0;z-index:2}
@@ -267,3 +267,7 @@ button.navfoot:hover .avatar{box-shadow:0 0 0 2px #1F5FBF}
 .cs-legenda{display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center;font-size:13px;color:#3B4756;background:#fff;border:1px solid #DDE1E7;border-radius:10px;padding:12px 16px}
 .cs-head .cs-num{font-family:inherit;font-size:inherit}
 .opin.num.wide{width:100%;text-align:right}
+.opin.num.wide{padding:2px 5px}
+.opin.num.wide::-webkit-outer-spin-button,.opin.num.wide::-webkit-inner-spin-button,.opin.num.compact::-webkit-outer-spin-button,.opin.num.compact::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.opin.num.wide,.opin.num.compact{-moz-appearance:textfield;appearance:textfield}
+.opin.num.compact{width:34px;padding:2px 2px}

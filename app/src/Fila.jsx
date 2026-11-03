@@ -59,12 +59,12 @@ function TextEdit({ value, onSave, disabled, className = '', placeholder, label,
   )
 }
 
-function NumEdit({ value, onSave, disabled, min = 0, label, wide = false, step }) {
+function NumEdit({ value, onSave, disabled, min = 0, label, wide = false, compact = false, step }) {
   const [v, setV] = useState(value ?? '')
   useEffect(() => setV(value ?? ''), [value])
   return (
     <input
-      className={'opin num mono' + (wide ? ' wide' : '')}
+      className={'opin num mono' + (wide ? ' wide' : '') + (compact ? ' compact' : '')}
       type="number"
       min={min}
       step={step}
@@ -677,7 +677,7 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar
           <div className="c mono" style={{ justifyContent: 'flex-end' }}>{num(r.volume_m2, 1)}</div>
           <div className="c mono">
             {ehController && salvar
-              ? <NumEdit value={r.bobinas} label="Bobinas" onSave={(n) => { if (n != null && (!Number.isInteger(n) || n < 0)) return false; salvar(r.id, { bobinas: n }) }} />
+              ? <NumEdit compact value={r.bobinas} label="Bobinas" onSave={(n) => { if (n != null && (!Number.isInteger(n) || n < 0)) return false; salvar(r.id, { bobinas: n }) }} />
               : (r.bobinas ?? '—')}
           </div>
           <div className="c mono">{r.papel_codigo ?? '—'}</div>
