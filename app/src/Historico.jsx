@@ -142,7 +142,6 @@ export default function Historico({ perfil }) {
           <label className="fld">Até<input type="date" value={ate} onChange={(e) => setAte(e.target.value)} /></label>
           {(de || ate) && <button className="btn" title="Remove o filtro de datas e mostra todo o histórico" onClick={() => { setDe(''); setAte('') }}>Todas as datas</button>}
           <label className="fld">Buscar<input placeholder="OP, material, cliente, SKU…" style={{ width: 220 }} value={busca} onChange={(e) => setBusca(e.target.value)} /></label>
-          <button className="btn" onClick={() => carregar()}>Atualizar</button>
           <button className="btn" disabled={!filtradas.length || exportando} onClick={exportar}>{exportando ? 'Gerando…' : 'Exportar Excel'}</button>
         </div>
       </header>

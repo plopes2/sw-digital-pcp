@@ -156,7 +156,6 @@ export default function AnalisePCP({ perfil }) {
           </div>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          <button className="btn" onClick={carregar}>Atualizar</button>
           <div style={{ display: 'flex', gap: 6 }} role="group" aria-label="Aba da análise">
             <button className={'ap-tab' + (aba === 'mto' ? ' on' : '')} aria-pressed={aba === 'mto'} onClick={() => trocaAba('mto')}>MTO</button>
             <button className={'ap-tab' + (aba === 'mts' ? ' on' : '')} aria-pressed={aba === 'mts'} onClick={() => trocaAba('mts')}>MTS</button>
