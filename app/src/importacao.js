@@ -156,10 +156,12 @@ export async function lerArquivo(file, tipo) {
   const linhas = []
   const erros = []
   let ignoradas = 0
+  let lidas = 0 // linhas com algum conteúdo abaixo do cabeçalho (só informativo)
 
   for (let r = iCab + 1; r < dados.length; r++) {
     const bruto = dados[r]
     if (bruto.every(vazio)) continue
+    lidas++
     const l = {}
     const errosLinha = []
     const erro = (m) => errosLinha.push(m)
@@ -206,6 +208,7 @@ export async function lerArquivo(file, tipo) {
     aba: achou.aba,
     colunas: Object.fromEntries(Object.keys(map).map((k) => [k, String(dados[iCab][map[k]]).replace(/\s+/g, ' ').trim()])),
     linhas,
+    lidas,
     erros,
     avisos,
     resumo: linhas.length ? def.resumo(linhas) : '',

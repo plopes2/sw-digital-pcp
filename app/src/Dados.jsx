@@ -157,6 +157,7 @@ function CartaoUpload({ tipo, vigente, habilitado, onEnviado }) {
           <div><strong>{st.nome}</strong> · aba "{st.res.aba}"</div>
           {st.res.linhas.length > 0 && <div className={st.res.erros.length ? 'msg warnmsg' : 'msg ok'}>{st.res.erros.length ? 'Sem contar as com problema: ' : ''}{st.res.linhas.length} linhas válidas — {st.res.resumo}</div>}
           {st.res.linhas.length === 0 && st.res.erros.length === 0 && <div className="msg err">Nenhuma linha válida encontrada.</div>}
+          {st.res.linhas.length > 0 && <div style={{ fontSize: 12, color: '#5A6675' }}>Linhas lidas no arquivo: {st.res.lidas}</div>}
           {st.res.avisos.map((a, i) => <div key={i} className="msg warnmsg">{a}</div>)}
           {st.res.erros.length > 0 && (
             <div className="msg err">
