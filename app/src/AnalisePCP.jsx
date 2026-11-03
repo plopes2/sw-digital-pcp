@@ -62,6 +62,7 @@ export default function AnalisePCP({ perfil }) {
   const [mts, setMts] = useState(null)
   const [erro, setErro] = useState(null)
   const [okMsg, setOkMsg] = useState(null)
+  const [ajustando, setAjustando] = useState(null)
   const [filtro, setFiltro] = useState('todos')
   const [q, setQ] = useState('')
   const [aberto, setAberto] = useState(null)
@@ -94,6 +95,18 @@ export default function AnalisePCP({ perfil }) {
     if (error) { setErro('Não foi possível programar: ' + error.message); return }
     setOkMsg(`${rotulo} programado no fim da Fila${p > 0 ? ` com acréscimo de ${fmtP(p)}%` : ''}. Complete OP, data de produção e bobinas na Fila.`)
     setAberto(null); setPct('0')
+    await carregar()
+  }
+
+  async function ajustar(tipo, chave, rotulo) {
+    setAjustando(String(chave)); setErro(null); setOkMsg(null)
+    const { data, error } = await prog().rpc('ajustar_qtd', { p_tipo: tipo, p_chave: String(chave) })
+    setAjustando(null)
+    if (error) { setErro('Não foi possível ajustar: ' + error.message); return }
+    let m = `${rotulo}: M. Mínima na Fila ajustada de ${fmtN(data?.total_antes)} para ${fmtN(data?.total_depois)} m.`
+    if (data?.linhas > 1) m += ` Produção dividida em ${data.linhas} linhas: ajustadas na mesma proporção.`
+    if (data?.bobinas_manuais > 0) m += ' As bobinas digitadas à mão foram mantidas: confira na Fila.'
+    setOkMsg(m)
     await carregar()
   }
 
@@ -223,9 +236,9 @@ export default function AnalisePCP({ perfil }) {
       </section>
 
       {aba === 'mto' ? (
-        <TabelaMto linhas={linhas} ehController={ehController} aberto={aberto} abre={abre} pct={pct} setPct={setPct} enviando={enviando} programar={programar} />
+        <TabelaMto linhas={linhas} ehController={ehController} aberto={aberto} abre={abre} pct={pct} setPct={setPct} enviando={enviando} programar={programar} ajustar={ajustar} ajustando={ajustando} />
       ) : (
-        <TabelaMts linhas={linhas} ehController={ehController} aberto={aberto} abre={abre} pct={pct} setPct={setPct} enviando={enviando} programar={programar} />
+        <TabelaMts linhas={linhas} ehController={ehController} aberto={aberto} abre={abre} pct={pct} setPct={setPct} enviando={enviando} programar={programar} ajustar={ajustar} ajustando={ajustando} />
       )}
 
       <div style={{ fontSize: 12, color: '#5A6675', lineHeight: 1.5 }}>
@@ -308,7 +321,7 @@ function Painel({ aberto, material, pct, setPct, previa, detalhe, enviando, onPr
   )
 }
 
-function TabelaMto({ linhas, ehController, aberto, abre, pct, setPct, enviando, programar }) {
+function TabelaMto({ linhas, ehController, aberto, abre, pct, setPct, enviando, programar, ajustar, ajustando }) {
   const p = parseFloat(String(pct).replace(',', '.')) || 0
   return (
     <section aria-label="Materiais com falta (MTO)" className="ap-wrap">
@@ -353,6 +366,9 @@ function TabelaMto({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
                   {ehController && x.status_qtd === 'NÃO PROGRAMADO' && (
                     <button className="btn sm primary" aria-expanded={abre1} onClick={() => abre(x.material)}>Programar</button>
                   )}
+                  {ehController && (x.status_qtd === 'ACIMA' || x.status_qtd === 'ABAIXO') && (
+                    <button className="btn sm" disabled={ajustando === String(x.material)} title={`Muda a M. Mínima na Fila para ${fmtN(x.produzir_m)} m (o PRODUZIR)`} onClick={() => ajustar('mto', x.material, 'Material ' + x.material)}>{ajustando === String(x.material) ? 'Ajustando…' : 'Ajustar qtd'}</button>
+                  )}
                 </div>
               </div>
               <Painel
@@ -375,7 +391,7 @@ function TabelaMto({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
   )
 }
 
-function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, programar }) {
+function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, programar, ajustar, ajustando }) {
   const p = parseFloat(String(pct).replace(',', '.')) || 0
   return (
     <section aria-label="Contratos (MTS)" className="ap-wrap">
@@ -413,6 +429,9 @@ function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
                 <div className="ap-c">
                   {ehController && x.status_qtd === 'NÃO PROGRAMADO' && (
                     <button className="btn sm primary" aria-expanded={abre1} onClick={() => abre(String(x.contrato_id))}>Programar</button>
+                  )}
+                  {ehController && (x.status_qtd === 'ACIMA' || x.status_qtd === 'ABAIXO') && (
+                    <button className="btn sm" disabled={ajustando === String(x.contrato_id)} title={`Muda a M. Mínima na Fila para ${fmtN(x.produzir_m)} m (o PRODUZIR)`} onClick={() => ajustar('mts', x.contrato_id, 'Contrato ' + x.codigo)}>{ajustando === String(x.contrato_id) ? 'Ajustando…' : 'Ajustar qtd'}</button>
                   )}
                 </div>
               </div>
