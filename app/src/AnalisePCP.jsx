@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTempoReal, TR } from './tempoReal.js'
 import { supabase, prog } from './supabase.js'
 
 const motor = () => supabase.schema('motor')
@@ -59,6 +60,8 @@ export default function AnalisePCP({ perfil }) {
     setMts(b.data)
   }, [])
   useEffect(() => { carregar() }, [carregar])
+  // Tempo real: novo envio de dados, item programado na Fila, cadastros ou contratos alterados por qualquer usuário
+  useTempoReal([TR.carga, ...TR.fila, ...TR.combos, ...TR.contratos], carregar)
 
   const trocaAba = (n) => { setAba(n); setFiltro('todos'); setAberto(null); setPct('0') }
   const abre = (chave) => { setAberto((x) => (x === chave ? null : chave)); setPct('0') }

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTempoReal, TR } from './tempoReal.js'
 import { supabase } from './supabase.js'
 import { carregarCombinacoes, carregarCliches, carregarCores, carregarMateriais, filtrarCombos, fmtData, norm } from './cadastros.js'
 import { lerDadosCliches, enviarCliches } from './cliches.js'
@@ -44,6 +45,8 @@ function Combinacoes({ ehController }) {
     } catch (e) { setErro(e.message) }
   }, [])
   useEffect(() => { carregar() }, [carregar])
+  // Tempo real: combinações, clichês e clientes alterados por qualquer usuário
+  useTempoReal(TR.combos, carregar)
 
   const kpi = useMemo(() => {
     if (!combos) return null
@@ -202,6 +205,8 @@ function Cliches({ ehController }) {
     try { setLista(await carregarCliches()) } catch (e) { setErro(e.message) }
   }, [])
   useEffect(() => { carregar() }, [carregar])
+  // Tempo real: combinações, clichês e clientes alterados por qualquer usuário
+  useTempoReal(TR.combos, carregar)
 
   const vis = useMemo(() => {
     if (!lista) return null

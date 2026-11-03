@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTempoReal, TR } from './tempoReal.js'
 import { DndContext } from '@dnd-kit/core'
 import { SortableContext } from '@dnd-kit/sortable'
 import { supabase } from './supabase.js'
@@ -22,8 +23,9 @@ export default function Historico({ perfil }) {
   const [erro, setErro] = useState(null)
   const [qtd, setQtd] = useState(PAGINA)
 
-  const carregar = useCallback(async () => {
-    setLinhas(null); setErro(null)
+  const carregar = useCallback(async (silencioso = false) => {
+    if (silencioso !== true) setLinhas(null) // recarga do tempo real é silenciosa (sem piscar a tela)
+    setErro(null)
     const out = []
     for (let ini = 0; ; ini += 1000) {
       let q = ac()
@@ -41,9 +43,11 @@ export default function Historico({ perfil }) {
     // dia mais recente em cima; dentro do dia, a ordem da fila
     out.sort((a, b) => (a.fila_snapshot.data_ref < b.fila_snapshot.data_ref ? 1 : a.fila_snapshot.data_ref > b.fila_snapshot.data_ref ? -1 : a.ordem - b.ordem))
     setLinhas(out)
-    setQtd(PAGINA)
+    if (silencioso !== true) setQtd(PAGINA)
   }, [de, ate])
   useEffect(() => { carregar() }, [carregar])
+  // Tempo real: "Salvar no Histórico" ou "Realizado" lançados por outro usuário aparecem sozinhos
+  useTempoReal(TR.historico, () => carregar(true))
 
   const filtradas = useMemo(() => {
     if (!linhas) return []
@@ -138,7 +142,7 @@ export default function Historico({ perfil }) {
           <label className="fld">Até<input type="date" value={ate} onChange={(e) => setAte(e.target.value)} /></label>
           {(de || ate) && <button className="btn" title="Remove o filtro de datas e mostra todo o histórico" onClick={() => { setDe(''); setAte('') }}>Todas as datas</button>}
           <label className="fld">Buscar<input placeholder="OP, material, cliente, SKU…" style={{ width: 220 }} value={busca} onChange={(e) => setBusca(e.target.value)} /></label>
-          <button className="btn" onClick={carregar}>Atualizar</button>
+          <button className="btn" onClick={() => carregar()}>Atualizar</button>
           <button className="btn" disabled={!filtradas.length || exportando} onClick={exportar}>{exportando ? 'Gerando…' : 'Exportar Excel'}</button>
         </div>
       </header>

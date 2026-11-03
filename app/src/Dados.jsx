@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './supabase.js'
 import { TIPOS, ORDEM_TIPOS, lerArquivo } from './importacao.js'
+import { useTempoReal, TR } from './tempoReal.js'
 
 const fmtDH = (s) => (s ? new Date(s).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—')
 const entrada = () => supabase.schema('entrada')
@@ -33,6 +34,8 @@ export default function Dados({ perfil }) {
     }
   }, [])
   useEffect(() => { carregar() }, [carregar])
+  // Tempo real: histórico de envios, carga vigente e demandas atualizam quando outro usuário envia um arquivo
+  useTempoReal([TR.carga, ...TR.fila, ...TR.contratos], carregar)
 
   async function tornarVigente(id) {
     if (!window.confirm('Voltar a usar esta carga como a vigente? A atual deixa de valer.')) return

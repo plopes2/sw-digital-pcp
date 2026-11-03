@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTempoReal, TR } from './tempoReal.js'
 import { DndContext, PointerSensor, KeyboardSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -115,6 +116,14 @@ export default function Fila({ perfil }) {
 
   useEffect(() => { carregar() }, [carregar])
 
+  // Tempo real: qualquer mudança de outro usuário atualiza a Fila. Durante um arraste (ou o salvamento da própria
+  // reordenação) a recarga espera, para a linha não "pular" da mão de quem está movendo.
+  const ocupado = useRef(false)
+  const pendente = useRef(false)
+  const aoMudar = useCallback(() => { if (ocupado.current) pendente.current = true; else carregar() }, [carregar])
+  const liberar = () => { ocupado.current = false; if (pendente.current) { pendente.current = false; carregar() } }
+  useTempoReal([TR.carga, ...TR.fila, 'cadastro.cliche', 'cadastro.material', 'cadastro.cliente', 'acompanhamento.fila_snapshot'], aoMudar)
+
   async function salvar(id, patch) {
     const { error } = await prog().from('fila_linha').update(patch).eq('id', id)
     if (error) setErro('Não foi possível salvar: ' + error.message)
@@ -126,7 +135,12 @@ export default function Fila({ perfil }) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  async function aoSoltar({ active, over }) {
+  async function aoSoltar(e) {
+    ocupado.current = true
+    try { await soltarLinha(e) } finally { liberar() }
+  }
+
+  async function soltarLinha({ active, over }) {
     if (!over || active.id === over.id || !ehController) return
     const de = rows.findIndex((r) => r.id === active.id)
     const para = rows.findIndex((r) => r.id === over.id)
@@ -358,7 +372,7 @@ export default function Fila({ perfil }) {
         <div className="tbl">
           <CabecalhoFila />
 
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={aoSoltar}>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={() => { ocupado.current = true }} onDragCancel={liberar} onDragEnd={aoSoltar}>
             <SortableContext items={(rowsVis || []).map((r) => r.id)} strategy={verticalListSortingStrategy}>
               {itens.map((it, i) => {
                 if (it.k === 'dia') {

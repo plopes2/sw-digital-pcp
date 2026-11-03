@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTempoReal, TR } from './tempoReal.js'
 import { supabase } from './supabase.js'
 
 const motor = () => supabase.schema('motor')
@@ -27,6 +28,8 @@ export default function Consultar() {
     setEstoque(b.data)
   }, [])
   useEffect(() => { carregar() }, [carregar])
+  // Tempo real: novo envio de dados ou mudança na Fila (previsão de produção)
+  useTempoReal([TR.carga, ...TR.fila, 'cadastro.material', 'cadastro.cliente'], carregar)
 
   const clientes = useMemo(() => (pedidos ? [...new Set(pedidos.map((p) => p.cliente).filter(Boolean))].sort((x, y) => x.localeCompare(y, 'pt-BR')) : []), [pedidos])
 
