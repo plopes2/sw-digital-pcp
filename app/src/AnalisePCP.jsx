@@ -354,6 +354,9 @@ function TabelaMto({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
                   {x.status_data && (
                     <>
                       <span className={'badge ' + sdTom}>{x.status_data}</span>
+                      {x.status_data === 'ALINHADO · BI MUDOU' && x.bi_no_alinhamento && (
+                        <span style={{ fontSize: 12.5, fontWeight: 600, color: '#74460A' }} title="Data crítica do BI no momento do alinhamento → data crítica atual">BI mudou: {fmtD(x.bi_no_alinhamento).slice(0, 5)} → {fmtD(x.data_critica_real).slice(0, 5)}</span>
+                      )}
                       {x.dif_dias != null && <span style={{ fontSize: 12.5, color: '#5A6675' }}>BI − Fila: {x.dif_dias > 0 ? '+' : ''}{x.dif_dias} d</span>}
                     </>
                   )}

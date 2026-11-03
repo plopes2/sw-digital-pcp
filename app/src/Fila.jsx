@@ -104,17 +104,19 @@ export default function Fila({ perfil }) {
   const [dataFiltro, setDataFiltro] = useState('') // dia (yyyy-mm-dd)
 
   const carregar = useCallback(async () => {
-    const [f, o, ob, mn] = await Promise.all([
+    const [f, o, ob, mn, bi] = await Promise.all([
       prog().from('fila_calculada').select('*').order('ordem'),
       prog().from('ocupacao_dia').select('*').order('data'),
       supabase.schema('cadastro').from('cliche_vigente').select('sku_cliche').eq('status', 'obsoleto'),
       prog().from('fila_linha').select('id,bobinas_manual,alinhado_obs').or('bobinas_manual.eq.true,alinhado_obs.not.is.null'),
+      supabase.schema('motor').from('analise_mto').select('material,data_critica_real,bi_no_alinhamento,status_data').eq('status_data', 'ALINHADO · BI MUDOU'),
     ])
     if (f.error) { setErro(f.error.message); return }
     setErro(null)
     const obsoletos = new Set((ob.data || []).map((c) => c.sku_cliche))
     const extra = new Map((mn.data || []).map((x) => [x.id, x]))
-    setRows(f.data.map((r) => ({ ...r, ...(r.sku_cliche && obsoletos.has(r.sku_cliche) ? { cliche_obsoleto: true } : {}), bobinas_manual: !!extra.get(r.id)?.bobinas_manual, alinhado_obs: extra.get(r.id)?.alinhado_obs ?? null })))
+    const biMudou = new Map((bi.data || []).map((x) => [x.material, x]))
+    setRows(f.data.map((r) => ({ ...r, ...(r.sku_cliche && obsoletos.has(r.sku_cliche) ? { cliche_obsoleto: true } : {}), bobinas_manual: !!extra.get(r.id)?.bobinas_manual, alinhado_obs: extra.get(r.id)?.alinhado_obs ?? null, bi_mudou: r.ruptura_alinhada && biMudou.has(r.material) ? biMudou.get(r.material) : null })))
     const m = {}
     ;(o.data || []).forEach((d) => { m[d.data] = d })
     setOcup(m)
@@ -733,8 +735,8 @@ export function LinhaOp({ r, ehController, podeOp, salvar, excluir, abrirAlinhar
             <span className={rupCls}>{fmtD(r.data_ruptura)}</span>
             {r.data_ruptura && r.ruptura_alinhada && (
               abrirAlinhar
-                ? <button type="button" className="alin-btn" title={`Alinhado em ${fmtD(r.alinhado_em)}${r.alinhado_por ? ' por ' + r.alinhado_por : ''}${r.alinhado_com ? ' com ' + r.alinhado_com : ''}${r.alinhado_obs ? '. Obs.: ' + r.alinhado_obs : ''}. Clique para editar.`} onClick={() => abrirAlinhar(r)}>alinhado</button>
-                : <span className="an-tag" title={`Alinhado em ${fmtD(r.alinhado_em)}${r.alinhado_por ? ' por ' + r.alinhado_por : ''}${r.alinhado_com ? ' com ' + r.alinhado_com : ''}${r.alinhado_obs ? '. Obs.: ' + r.alinhado_obs : ''}`}>alinhado</span>
+                ? <button type="button" className={'alin-btn' + (r.bi_mudou ? ' bi' : '')} title={`${r.bi_mudou ? `A data crítica do BI mudou de ${fmtD(r.bi_mudou.bi_no_alinhamento)} para ${fmtD(r.bi_mudou.data_critica_real)} depois do alinhamento: reavalie e salve o alinhamento de novo. ` : ''}Alinhado em ${fmtD(r.alinhado_em)}${r.alinhado_por ? ' por ' + r.alinhado_por : ''}${r.alinhado_com ? ' com ' + r.alinhado_com : ''}${r.alinhado_obs ? '. Obs.: ' + r.alinhado_obs : ''}. Clique para editar.`} onClick={() => abrirAlinhar(r)}>{r.bi_mudou ? 'alinhado · BI mudou' : 'alinhado'}</button>
+                : <span className={'an-tag' + (r.bi_mudou ? ' bi' : '')} title={`${r.bi_mudou ? `A data crítica do BI mudou de ${fmtD(r.bi_mudou.bi_no_alinhamento)} para ${fmtD(r.bi_mudou.data_critica_real)} depois do alinhamento. ` : ''}Alinhado em ${fmtD(r.alinhado_em)}${r.alinhado_por ? ' por ' + r.alinhado_por : ''}${r.alinhado_com ? ' com ' + r.alinhado_com : ''}${r.alinhado_obs ? '. Obs.: ' + r.alinhado_obs : ''}`}>{r.bi_mudou ? 'alinhado · BI mudou' : 'alinhado'}</span>
             )}
             {abrirAlinhar && !(r.data_ruptura && r.ruptura_alinhada) && (
               <button type="button" className="alin-btn" title="Registrar o alinhamento desta data de ruptura" onClick={() => abrirAlinhar(r)}>alinhar</button>
