@@ -432,6 +432,7 @@ function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
                 <div className="ap-c ap-n mono">{fmtN(x.estoque_m)}</div>
                 <div className="ap-c ap-acao" style={{ flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', gap: 3 }}>
                   <span className={'badge ' + TOM[tomAcao(x.acao)]}>{x.acao}</span>
+                  {x.acao === 'PRODUZIR URGENTE' && x.data_critica_mto && <span className="ap-tag" style={{ color: '#8A1C14', fontWeight: 600, borderColor: '#E3A29C' }} title="Data de falta pela regra do MTO (primeiro pedido que o estoque não cobre)">falta em {fmtD(x.data_critica_mto)}</span>}
                   {x.passa_100_contrato && <span className="ap-tag" style={{ color: '#74460A', fontWeight: 600, borderColor: '#E0B060' }} title={`Estoque ${fmtN(x.estoque_m)} m + produção ${fmtN(Number(x.programado_m) > 0 ? x.programado_m : x.produzir_m)} m = ${fmtN(Number(x.estoque_m) + Number(Number(x.programado_m) > 0 ? x.programado_m : x.produzir_m))} m, acima do M.L. do contrato (${fmtN(x.ml_contrato)} m)`}>passa de 100%</span>}
                 </div>
                 <div className="ap-c ap-n mono" style={{ fontWeight: 500 }} title={x.urgente ? `Regra do MTO: falta a partir de ${fmtD(x.data_critica_mto)}, janela de 45 dias` : `Estoque projetado em ${fmtD(x.data_ref)}: ${fmtN(x.estoque_projetado_m)} m (estoque − o maior entre pedidos e média). Estoque de segurança: ${fmtN(x.es_m)} m`}>{fmtN(x.produzir_m)}</div>
