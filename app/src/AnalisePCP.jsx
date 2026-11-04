@@ -19,7 +19,7 @@ const rankMto = (x) => {
   if (ORD_QTD.includes(x.status_qtd)) return [3, ORD_QTD.indexOf(x.status_qtd)]
   return [4, 0]
 }
-// MTS: 1º cliente, 2º ação (PRODUZIR URGENTE, PROGRAMAR, AJUSTAR QTD, PROGRAMADO, OK, SUPER ESTOQUE), 3º status da quantidade, 4º contrato
+// MTS: 1º cliente, 2º ação (PRODUZIR URGENTE, PROGRAMAR, AJUSTAR QTD, PROGRAMADO, OK, SUPER ESTOQUE), 3º data de falta (a mais próxima primeiro), 4º status da quantidade, 5º contrato
 const ORD_STATUS_MTS = ['NÃO PROGRAMADO', 'ABAIXO', 'DIFERENÇA', 'FILA ALTERADA', 'ACIMA', 'PROGRAMADO SEM NECESSIDADE', 'OK']
 const cmpRank = (ra, rb) => ra[0] - rb[0] || ra[1] - rb[1]
 const QD = ['ACIMA', 'ABAIXO', 'DIFERENÇA', 'FILA ALTERADA', 'PROGRAMADO SEM NECESSIDADE']
@@ -158,6 +158,7 @@ export default function AnalisePCP({ perfil }) {
       })
       .sort((a, b) => String(a.cliente || '\uffff').localeCompare(String(b.cliente || '\uffff'), 'pt-BR')
         || posX(ORD_ACAO, a.acao) - posX(ORD_ACAO, b.acao)
+        || String(a.data_critica_mto || '9999').localeCompare(String(b.data_critica_mto || '9999'))
         || posX(ORD_STATUS_MTS, a.status_qtd) - posX(ORD_STATUS_MTS, b.status_qtd)
         || a.codigo.localeCompare(b.codigo, 'pt-BR', { numeric: true }))
   }, [mts, filtro, q])
