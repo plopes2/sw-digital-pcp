@@ -10,7 +10,7 @@ const AV = ['AVALIAR', 'ALINHADO SEM REGISTRO', 'ALINHADO · BI MUDOU', 'SEM DAT
 // ordem de avaliação (de cima para baixo): programar → ajustar data → ajustar quantidade → OK
 const ORD_DATA = ['AVALIAR', 'SEM DATA', 'ALINHADO · BI MUDOU', 'ALINHADO SEM REGISTRO']
 const ORD_QTD = ['ABAIXO', 'DIFERENÇA', 'FILA ALTERADA', 'ACIMA', 'PROGRAMADO SEM NECESSIDADE']
-const ORD_ACAO = ['PRODUZIR', 'RESSUPRIR', 'OK', 'SUPER ESTOQUE']
+const ORD_ACAO = ['PRODUZIR URGENTE', 'PROGRAMAR', 'AJUSTAR QTD', 'PROGRAMADO', 'OK', 'SUPER ESTOQUE']
 const posX = (lista, v) => { const i = lista.indexOf(v); return i < 0 ? lista.length : i }
 const rankMto = (x) => {
   if (x.status_qtd === 'CADASTRAR BOBINA KIWI') return [0, 0]
@@ -19,7 +19,7 @@ const rankMto = (x) => {
   if (ORD_QTD.includes(x.status_qtd)) return [3, ORD_QTD.indexOf(x.status_qtd)]
   return [4, 0]
 }
-// MTS: 1º cliente, 2º ação (PRODUZIR, RESSUPRIR, OK, SUPER ESTOQUE), 3º status: programar → ajustar quantidade → OK
+// MTS: 1º cliente, 2º ação (PRODUZIR URGENTE, PROGRAMAR, AJUSTAR QTD, PROGRAMADO, OK, SUPER ESTOQUE), 3º status da quantidade, 4º contrato
 const ORD_STATUS_MTS = ['NÃO PROGRAMADO', 'ABAIXO', 'DIFERENÇA', 'FILA ALTERADA', 'ACIMA', 'PROGRAMADO SEM NECESSIDADE', 'OK']
 const cmpRank = (ra, rb) => ra[0] - rb[0] || ra[1] - rb[1]
 const QD = ['ACIMA', 'ABAIXO', 'DIFERENÇA', 'FILA ALTERADA', 'PROGRAMADO SEM NECESSIDADE']
@@ -39,7 +39,7 @@ const TOM = {
 }
 const tomData = (s) => (s === 'OK' || s === 'OK (ALINHADO)' ? 'ok' : s === 'AVALIAR' ? 'err' : 'warn')
 const tomQtd = (s) => (s === 'OK' ? 'ok' : s === 'NÃO PROGRAMADO' ? 'info' : s === 'CADASTRAR BOBINA KIWI' ? 'err' : 'warn')
-const tomAcao = (s) => (s === 'PRODUZIR' ? 'err' : s === 'RESSUPRIR' ? 'warn' : s === 'OK' ? 'ok' : 'info')
+const tomAcao = (s) => (s === 'PRODUZIR URGENTE' ? 'err' : s === 'PROGRAMAR' ? 'info' : s === 'AJUSTAR QTD' ? 'warn' : s === 'PROGRAMADO' || s === 'OK' ? 'ok' : 'info')
 
 function deltaTxt(r) {
   if (r.delta_m == null) return '—'
@@ -59,6 +59,7 @@ export default function AnalisePCP({ perfil }) {
   const [erro, setErro] = useState(null)
   const [okMsg, setOkMsg] = useState(null)
   const [ajustando, setAjustando] = useState(null)
+  const [confirmando, setConfirmando] = useState(null)
   const [filtro, setFiltro] = useState('todos')
   const [q, setQ] = useState('')
   const [aberto, setAberto] = useState(null)
@@ -103,6 +104,15 @@ export default function AnalisePCP({ perfil }) {
     if (data?.linhas > 1) m += ` Produção dividida em ${data.linhas} linhas: ajustadas na mesma proporção.`
     if (data?.bobinas_manuais > 0) m += ' As bobinas digitadas à mão foram mantidas: confira na Fila.'
     setOkMsg(m)
+    await carregar()
+  }
+
+  async function cancelarOp(tipo, chave, rotulo) {
+    setAjustando(String(chave)); setErro(null); setOkMsg(null)
+    const { data, error } = await prog().rpc('cancelar_op', { p_tipo: tipo, p_chave: String(chave) })
+    setAjustando(null); setConfirmando(null)
+    if (error) { setErro('Não foi possível cancelar a OP: ' + error.message); return }
+    setOkMsg(`${rotulo}: OP cancelada. ${data?.linhas} linha(s) removida(s) da Fila (${fmtN(data?.total_cancelado)} m).`)
     await carregar()
   }
 
@@ -157,8 +167,8 @@ export default function AnalisePCP({ perfil }) {
     const c = (a) => l.filter((x) => x.acao === a).length
     return {
       total: l.length,
-      prod: c('PRODUZIR'),
-      ress: c('RESSUPRIR'),
+      prod: c('PRODUZIR URGENTE'),
+      ress: c('PROGRAMAR'),
       sup: c('SUPER ESTOQUE'),
       np: l.filter((x) => x.status_qtd === 'NÃO PROGRAMADO').length,
       qtd: l.filter((x) => QD.includes(x.status_qtd)).length,
@@ -207,8 +217,8 @@ export default function AnalisePCP({ perfil }) {
         ) : (
           <>
             <Kpi n={kpiMts.total} t="Contratos ativos" />
-            <Kpi n={kpiMts.prod} t="Produzir" tom="err" />
-            <Kpi n={kpiMts.ress} t="Ressuprir" tom="warn" />
+            <Kpi n={kpiMts.prod} t="Produzir urgente" tom="err" />
+            <Kpi n={kpiMts.ress} t="Programar" tom="info" />
             <Kpi n={kpiMts.sup} t="Super estoque" tom="info" />
             <Kpi n={kpiMts.np} t="Não programados" tom="info" />
             <Kpi n={kpiMts.qtd} t="Quantidade diferente" tom="warn" />
@@ -237,13 +247,13 @@ export default function AnalisePCP({ perfil }) {
       {aba === 'mto' ? (
         <TabelaMto linhas={linhas} ehController={ehController} aberto={aberto} abre={abre} pct={pct} setPct={setPct} enviando={enviando} programar={programar} ajustar={ajustar} ajustando={ajustando} />
       ) : (
-        <TabelaMts linhas={linhas} ehController={ehController} aberto={aberto} abre={abre} pct={pct} setPct={setPct} enviando={enviando} programar={programar} ajustar={ajustar} ajustando={ajustando} />
+        <TabelaMts linhas={linhas} ehController={ehController} aberto={aberto} abre={abre} pct={pct} setPct={setPct} enviando={enviando} programar={programar} ajustar={ajustar} ajustando={ajustando} cancelarOp={cancelarOp} confirmando={confirmando} setConfirmando={setConfirmando} />
       )}
 
       <div style={{ fontSize: 12, color: '#5A6675', lineHeight: 1.5 }}>
         {aba === 'mto'
           ? 'Produzir = necessidade pelo racional do SEQUENCIAMENTO (janela de 45 dias). Na Fila = soma da M. Mínima das linhas do material. Para registrar o alinhamento de uma data, use a coluna Data ruptura na Fila.'
-          : 'Regra da aba TB_CONTRATOS: Produzir se Estoque < Pedido; Ressuprir se Estoque − Pedido < M.L. contrato; Super estoque se Estoque − Pedido > M.L. contrato × 1,1. Produzir (m) = Pedido − Estoque + M.L. contrato. MTS não tem status de data.'}
+          : 'Estoque projetado = Estoque − o maior entre os pedidos até a data e a média (M.L. contrato ÷ 90 × dias). Sem OP: Programar quando o projetado em D+25 ≤ estoque de segurança (média × 25 dias × 30%); Produzir = M.L. contrato − projetado. Com OP: compara a Fila com M.L. contrato − projetado na data da OP. Produzir urgente: Estoque < Pedido, com a quantidade pela regra do MTO (janela de 45 dias). Super estoque: Estoque − Pedido > M.L. contrato × 1,1. MTS não tem status de data.'}
       </div>
     </div>
   )
@@ -393,7 +403,7 @@ function TabelaMto({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
   )
 }
 
-function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, programar, ajustar, ajustando }) {
+function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, programar, ajustar, ajustando, cancelarOp, confirmando, setConfirmando }) {
   const p = parseFloat(String(pct).replace(',', '.')) || 0
   return (
     <section aria-label="Contratos (MTS)" className="ap-wrap">
@@ -420,8 +430,11 @@ function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
                 <div className="ap-c ap-n mono">{fmtN(x.ml_contrato)}</div>
                 <div className="ap-c ap-n mono">{fmtN(x.pedido_m)}</div>
                 <div className="ap-c ap-n mono">{fmtN(x.estoque_m)}</div>
-                <div className="ap-c"><span className={'badge ' + TOM[tomAcao(x.acao)]}>{x.acao}</span></div>
-                <div className="ap-c ap-n mono" style={{ fontWeight: 500 }}>{fmtN(x.produzir_m)}</div>
+                <div className="ap-c ap-acao" style={{ flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', gap: 3 }}>
+                  <span className={'badge ' + TOM[tomAcao(x.acao)]}>{x.acao}</span>
+                  {x.passa_100_contrato && <span className="ap-tag" style={{ color: '#74460A', fontWeight: 600, borderColor: '#E0B060' }} title={`Estoque ${fmtN(x.estoque_m)} m + produção ${fmtN(Number(x.programado_m) > 0 ? x.programado_m : x.produzir_m)} m = ${fmtN(Number(x.estoque_m) + Number(Number(x.programado_m) > 0 ? x.programado_m : x.produzir_m))} m, acima do M.L. do contrato (${fmtN(x.ml_contrato)} m)`}>passa de 100%</span>}
+                </div>
+                <div className="ap-c ap-n mono" style={{ fontWeight: 500 }} title={x.urgente ? `Regra do MTO: falta a partir de ${fmtD(x.data_critica_mto)}, janela de 45 dias` : `Estoque projetado em ${fmtD(x.data_ref)}: ${fmtN(x.estoque_projetado_m)} m (estoque − o maior entre pedidos e média). Estoque de segurança: ${fmtN(x.es_m)} m`}>{fmtN(x.produzir_m)}</div>
                 <div className="ap-c ap-n mono">{fmtN(x.programado_m)}</div>
                 <div className="ap-c ap-n mono" style={{ color: dl == null || dl === 0 ? '#1B2430' : '#74460A', textAlign: 'right' }}>{deltaTxt(x)}</div>
                 <div className="ap-c" style={{ flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', gap: 3 }}>
@@ -434,6 +447,16 @@ function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
                   )}
                   {ehController && (x.status_qtd === 'ACIMA' || x.status_qtd === 'ABAIXO') && (
                     <button className="btn sm" disabled={ajustando === String(x.contrato_id)} title={`Muda a M. Mínima na Fila para ${fmtN(x.produzir_m)} m (o PRODUZIR)`} onClick={() => ajustar('mts', x.contrato_id, 'Contrato ' + x.codigo)}>{ajustando === String(x.contrato_id) ? 'Ajustando…' : 'Ajustar qtd'}</button>
+                  )}
+                  {ehController && x.status_qtd === 'PROGRAMADO SEM NECESSIDADE' && (
+                    confirmando === String(x.contrato_id) ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <button className="btn sm danger" disabled={ajustando === String(x.contrato_id)} onClick={() => cancelarOp('mts', x.contrato_id, 'Contrato ' + x.codigo)}>{ajustando === String(x.contrato_id) ? 'Cancelando…' : 'Confirmar'}</button>
+                        <button className="btn sm" onClick={() => setConfirmando(null)}>Voltar</button>
+                      </div>
+                    ) : (
+                      <button className="btn sm" title={`Remove da Fila as ${x.linhas_fila} linha(s) deste contrato (${fmtN(x.programado_m)} m)`} onClick={() => setConfirmando(String(x.contrato_id))}>Cancelar OP</button>
+                    )
                   )}
                 </div>
               </div>
