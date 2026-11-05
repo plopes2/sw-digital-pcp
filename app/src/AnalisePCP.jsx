@@ -437,9 +437,14 @@ function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
                   {(x.data_critica_mto || x.status_data) && (() => {
                     const sd = x.status_data
                     const cor = sd === 'AVALIAR' ? '#8A1C14' : sd === 'SEM DATA' || (sd && sd.startsWith('ALINHADO')) ? '#74460A' : '#5A6675'
-                    const txt = [x.data_critica_mto ? 'falta ' + fmtD(x.data_critica_mto).slice(0, 5) : 'sem falta', sd === 'AVALIAR' ? 'ajustar data' : sd === 'SEM DATA' ? 'sem data na Fila' : sd === 'ALINHADO SEM REGISTRO' ? 'alinhado s/ registro' : sd === 'ALINHADO · BI MUDOU' ? 'BI mudou' : sd ? 'data ok' : null].filter(Boolean).join(' · ')
+                    const resto = sd === 'AVALIAR' ? 'ajustar data' : sd === 'SEM DATA' ? 'sem data na Fila' : sd === 'ALINHADO SEM REGISTRO' ? 'alinhado s/ registro' : sd === 'ALINHADO · BI MUDOU' ? 'BI mudou' : sd ? 'data ok' : null
                     const dica = 'Data de falta pela regra do MTO (primeiro pedido que o estoque do contrato não cobre).' + (x.data_ruptura_fila ? ` Ruptura na Fila: ${fmtD(x.data_ruptura_fila)}${x.dif_dias != null ? ` (BI − Fila: ${x.dif_dias > 0 ? '+' : ''}${x.dif_dias} d)` : ''}.` : '') + (sd === 'AVALIAR' ? ' Ajuste a data na Fila.' : '')
-                    return <span style={{ fontSize: 12.5, fontWeight: sd === 'AVALIAR' ? 600 : 400, color: cor }} title={dica}>{txt}</span>
+                    return (
+                      <span style={{ fontSize: 12.5 }} title={dica}>
+                        <span style={{ color: '#B3261E', fontWeight: 600 }}>{x.data_critica_mto ? 'falta ' + fmtD(x.data_critica_mto).slice(0, 5) : 'sem falta'}</span>
+                        {resto && <span style={{ color: cor, fontWeight: sd === 'AVALIAR' ? 600 : 400 }}>{' · ' + resto}</span>}
+                      </span>
+                    )
                   })()}
                   {x.passa_100_contrato && <span className="ap-tag" style={{ color: '#74460A', fontWeight: 600, borderColor: '#E0B060' }} title={`Estoque ${fmtN(x.estoque_m)} m + produção ${fmtN(Number(x.programado_m) > 0 ? x.programado_m : x.produzir_m)} m = ${fmtN(Number(x.estoque_m) + Number(Number(x.programado_m) > 0 ? x.programado_m : x.produzir_m))} m, acima do M.L. do contrato (${fmtN(x.ml_contrato)} m)`}>passa de 100%</span>}
                 </div>
