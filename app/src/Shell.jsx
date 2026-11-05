@@ -7,6 +7,7 @@ import Cadastros from './Cadastros.jsx'
 import AnalisePCP from './AnalisePCP.jsx'
 import UsuariosLogs from './UsuariosLogs.jsx'
 import Consultar from './Consultar.jsx'
+import Supply from './Supply.jsx'
 
 const ICONS = {
   Painel: 'M3 3h6v6H3zM11 3h6v6h-6zM3 11h6v6H3zM11 11h6v6h-6z',
@@ -44,7 +45,7 @@ export default function Shell({ session, usuario }) {
     window.addEventListener('keydown', fechar)
     return () => window.removeEventListener('keydown', fechar)
   }, [conta])
-  const disponiveis = { 'Análise PCP': usuario.perfil === 'controller', Fila: true, Dados: true, Cadastros: true, Histórico: true, Consultar: true, 'Usuários e logs': usuario.perfil === 'controller' }
+  const disponiveis = { 'Análise PCP': usuario.perfil === 'controller', Fila: true, Supply: true, Dados: true, Cadastros: true, Histórico: true, Consultar: true, 'Usuários e logs': usuario.perfil === 'controller' }
   const nome = usuario.nome || usuario.nome_completo || session.user.email
   return (
     <div className="app">
@@ -96,7 +97,7 @@ export default function Shell({ session, usuario }) {
         </>
       )}
       <main className="main">
-        {pagina === 'Dados' ? <Dados perfil={usuario.perfil} /> : pagina === 'Análise PCP' ? <AnalisePCP perfil={usuario.perfil} /> : pagina === 'Cadastros' ? <Cadastros perfil={usuario.perfil} /> : pagina === 'Histórico' ? <Historico perfil={usuario.perfil} /> : pagina === 'Consultar' ? <Consultar /> : pagina === 'Usuários e logs' ? <UsuariosLogs perfil={usuario.perfil} meuId={session.user.id} aoMudarPendentes={setPendentes} /> : <Fila perfil={usuario.perfil} />}
+        {pagina === 'Dados' ? <Dados perfil={usuario.perfil} /> : pagina === 'Análise PCP' ? <AnalisePCP perfil={usuario.perfil} /> : pagina === 'Cadastros' ? <Cadastros perfil={usuario.perfil} /> : pagina === 'Histórico' ? <Historico perfil={usuario.perfil} /> : pagina === 'Consultar' ? <Consultar /> : pagina === 'Supply' ? <Supply perfil={usuario.perfil} /> : pagina === 'Usuários e logs' ? <UsuariosLogs perfil={usuario.perfil} meuId={session.user.id} aoMudarPendentes={setPendentes} /> : <Fila perfil={usuario.perfil} />}
       </main>
     </div>
   )

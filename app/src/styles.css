@@ -289,3 +289,35 @@ button.navfoot:hover .avatar{box-shadow:0 0 0 2px #1F5FBF}
 .alin-btn.bi,.an-tag.bi{color:#74460A;font-weight:600;text-decoration-color:#E0A030;border-bottom-color:#E0A030}
 .btn.danger{background:#B3261E;border-color:#B3261E;color:#fff}
 .btn.danger:disabled{opacity:.6;cursor:default}
+
+/* Supply · Modula */
+.sp-page{display:flex;flex-direction:column;gap:14px;max-width:1280px;width:100%;margin:0 auto}
+.sp-head{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.sp-stats{display:flex;gap:20px;font-size:12px;color:#5A6675}
+.sp-stats div{display:flex;flex-direction:column}
+.sp-stats b{font-size:22px;font-weight:600;color:#1B2430}
+.sp-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(320px,1fr);gap:14px;align-items:start}
+@media (max-width:1000px){.sp-grid{grid-template-columns:1fr}}
+.sp-toolbar{display:flex;flex-wrap:wrap;gap:8px}
+.sp-in{box-sizing:border-box;border:1px solid #C9CFD8;border-radius:6px;padding:8px 10px;font:inherit;font-size:14px;color:#1B2430;background:#fff;min-height:40px;min-width:0}
+.sp-toolbar .sp-in{flex:1 1 220px}
+.sp-tabela{border:1px solid #DDE1E7;border-radius:8px;overflow:auto;max-height:520px}
+.sp-row{display:grid;grid-template-columns:64px 64px 120px minmax(180px,1fr) 190px;gap:8px;padding:8px 12px;border-bottom:1px solid #EDF0F4;font-size:13px;align-items:start;min-width:640px}
+.sp-h{position:sticky;top:0;background:#F2F4F7;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;color:#3B4756}
+.sp-notes{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.sp-sub{font-size:12px;color:#5A6675;margin-top:2px}
+.sp-form{display:flex;flex-direction:column;gap:10px}
+.sp-form .fld input,.sp-form .fld select{width:100%}
+.sp-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sp-hint{font-size:12px;color:#5A6675}
+.sp-hint.ok{color:#0F5F34}.sp-hint.warn{color:#74460A}.sp-hint.bad{color:#9B2318}
+.sp-fs{border:1px solid #DDE1E7;border-radius:8px;padding:6px 10px 10px;margin:0}
+.sp-fs legend{font-size:12px;color:#3B4756;padding:0 4px}
+.sp-chks{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sp-chk{min-height:28px;border:1px solid #C9CFD8;border-radius:6px;padding:0 8px}.sp-chk input{width:16px;height:16px}
+.sp-tag{display:inline-flex;gap:6px;align-items:center;border:1px solid #C9CFD8;border-radius:6px;padding:3px 4px 3px 9px;font-size:13px;background:#fff}
+.sp-tag button{border:0;background:none;cursor:pointer;font-size:16px;line-height:1;color:#5A6675;padding:0 4px}
+.sp-sols{border:1px solid #DDE1E7;border-radius:8px;overflow:auto}
+.sp-srow{display:grid;grid-template-columns:150px 80px 170px 130px 150px 130px 100px minmax(290px,1fr);gap:10px;padding:10px 12px;border-bottom:1px solid #EDF0F4;font-size:13px;align-items:start;min-width:1280px}
+.sp-act{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.sp-act input[type=date]{border:1px solid #C9CFD8;border-radius:6px;padding:4px 6px;font:inherit}
