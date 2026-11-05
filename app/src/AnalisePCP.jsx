@@ -254,7 +254,7 @@ export default function AnalisePCP({ perfil }) {
       <div style={{ fontSize: 12, color: '#5A6675', lineHeight: 1.5 }}>
         {aba === 'mto'
           ? 'Produzir = necessidade pelo racional do SEQUENCIAMENTO (janela de 45 dias). Na Fila = soma da M. Mínima das linhas do material. Para registrar o alinhamento de uma data, use a coluna Data ruptura na Fila.'
-          : 'Estoque projetado = Estoque − o maior entre os pedidos até a data e a média (M.L. contrato ÷ 90 × dias). Sem OP: Programar quando o projetado em D+25 ≤ estoque de segurança (média × 25 dias × 30%); Produzir = M.L. contrato − projetado. Com OP: compara a Fila com M.L. contrato − projetado na data da OP. Produzir urgente: Estoque < Pedido, com a quantidade pela regra do MTO (janela de 45 dias). Super estoque: Estoque − Pedido > M.L. contrato × 1,1. MTS não tem status de data.'}
+          : 'Estoque projetado = Estoque − o maior entre os pedidos até a data e a média (M.L. contrato ÷ 90 × dias). Sem OP: Programar quando o projetado em D+25 ≤ estoque de segurança (média × 25 dias × 30%); Produzir = M.L. contrato − projetado. Com OP: compara a Fila com M.L. contrato − projetado na data da OP. Produzir urgente: Estoque < Pedido; a quantidade completa o contrato (M.L. − projetado) e nunca é menor que o furo dos pedidos pela regra do MTO (janela de 45 dias). Super estoque: Estoque − Pedido > M.L. contrato × 1,1. Material de contrato não aparece no MTO: a data de falta e o status da data (comparado com a Fila) ficam sob a Ação.'}
       </div>
     </div>
   )
@@ -434,10 +434,16 @@ function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
                 <div className="ap-c ap-n mono">{fmtN(x.estoque_m)}</div>
                 <div className="ap-c ap-acao" style={{ flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', gap: 3 }}>
                   <span className={'badge ' + TOM[tomAcao(x.acao)]}>{x.acao}</span>
-                  {x.acao === 'PRODUZIR URGENTE' && x.data_critica_mto && <span className="ap-tag" style={{ color: '#8A1C14', fontWeight: 600, borderColor: '#E3A29C' }} title="Data de falta pela regra do MTO (primeiro pedido que o estoque não cobre)">falta em {fmtD(x.data_critica_mto)}</span>}
+                  {(x.data_critica_mto || x.status_data) && (() => {
+                    const sd = x.status_data
+                    const cor = sd === 'AVALIAR' ? '#8A1C14' : sd === 'SEM DATA' || (sd && sd.startsWith('ALINHADO')) ? '#74460A' : '#5A6675'
+                    const txt = [x.data_critica_mto ? 'falta ' + fmtD(x.data_critica_mto).slice(0, 5) : 'sem falta', sd === 'AVALIAR' ? 'ajustar data' : sd === 'SEM DATA' ? 'sem data na Fila' : sd === 'ALINHADO SEM REGISTRO' ? 'alinhado s/ registro' : sd === 'ALINHADO · BI MUDOU' ? 'BI mudou' : sd ? 'data ok' : null].filter(Boolean).join(' · ')
+                    const dica = 'Data de falta pela regra do MTO (primeiro pedido que o estoque do contrato não cobre).' + (x.data_ruptura_fila ? ` Ruptura na Fila: ${fmtD(x.data_ruptura_fila)}${x.dif_dias != null ? ` (BI − Fila: ${x.dif_dias > 0 ? '+' : ''}${x.dif_dias} d)` : ''}.` : '') + (sd === 'AVALIAR' ? ' Ajuste a data na Fila.' : '')
+                    return <span style={{ fontSize: 12.5, fontWeight: sd === 'AVALIAR' ? 600 : 400, color: cor }} title={dica}>{txt}</span>
+                  })()}
                   {x.passa_100_contrato && <span className="ap-tag" style={{ color: '#74460A', fontWeight: 600, borderColor: '#E0B060' }} title={`Estoque ${fmtN(x.estoque_m)} m + produção ${fmtN(Number(x.programado_m) > 0 ? x.programado_m : x.produzir_m)} m = ${fmtN(Number(x.estoque_m) + Number(Number(x.programado_m) > 0 ? x.programado_m : x.produzir_m))} m, acima do M.L. do contrato (${fmtN(x.ml_contrato)} m)`}>passa de 100%</span>}
                 </div>
-                <div className="ap-c ap-n mono" style={{ fontWeight: 500 }} title={x.urgente ? `Regra do MTO: falta a partir de ${fmtD(x.data_critica_mto)}, janela de 45 dias` : `Estoque projetado em ${fmtD(x.data_ref)}: ${fmtN(x.estoque_projetado_m)} m (estoque − o maior entre pedidos e média). Estoque de segurança: ${fmtN(x.es_m)} m`}>{fmtN(x.produzir_m)}</div>
+                <div className="ap-c ap-n mono" style={{ fontWeight: 500 }} title={x.urgente ? `Urgente: completa o contrato (M.L. − estoque projetado), nunca menos que o furo dos pedidos pela regra do MTO (falta a partir de ${fmtD(x.data_critica_mto)}, janela de 45 dias)` : `Estoque projetado em ${fmtD(x.data_ref)}: ${fmtN(x.estoque_projetado_m)} m (estoque − o maior entre pedidos e média). Estoque de segurança: ${fmtN(x.es_m)} m`}>{fmtN(x.produzir_m)}</div>
                 <div className="ap-c ap-n mono">{fmtN(x.programado_m)}</div>
                 <div className="ap-c ap-n mono" style={{ color: dl == null || dl === 0 ? '#1B2430' : '#74460A', textAlign: 'right' }}>{deltaTxt(x)}</div>
                 <div className="ap-c" style={{ flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', gap: 3 }}>
