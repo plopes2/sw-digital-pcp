@@ -380,8 +380,8 @@ function TabelaMto({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
                   {ehController && x.status_qtd === 'NÃO PROGRAMADO' && (
                     <button className="btn sm primary" aria-expanded={abre1} onClick={() => abre(x.material)}>Programar</button>
                   )}
-                  {ehController && (x.status_qtd === 'ACIMA' || x.status_qtd === 'ABAIXO') && (
-                    <button className="btn sm" disabled={ajustando === String(x.material)} title={`Muda a M. Mínima na Fila para ${fmtN(x.produzir_m)} m (o PRODUZIR)`} onClick={() => ajustar('mto', x.material, 'Material ' + x.material)}>{ajustando === String(x.material) ? 'Ajustando…' : 'Ajustar qtd'}</button>
+                  {ehController && ['ACIMA', 'ABAIXO', 'DIFERENÇA', 'FILA ALTERADA'].includes(x.status_qtd) && (
+                    <button className="btn sm" disabled={ajustando === String(x.material)} title={x.refugo_pct != null && Number(x.refugo_pct) > 0 ? `Muda a M. Mínima na Fila para ${fmtN(x.produzir_m)} m + acréscimo de ${fmtP(x.refugo_pct)}%` : `Muda a M. Mínima na Fila para ${fmtN(x.produzir_m)} m (o PRODUZIR)`} onClick={() => ajustar('mto', x.material, 'Material ' + x.material)}>{ajustando === String(x.material) ? 'Ajustando…' : 'Ajustar qtd'}</button>
                   )}
                 </div>
               </div>
@@ -459,8 +459,8 @@ function TabelaMts({ linhas, ehController, aberto, abre, pct, setPct, enviando, 
                   {ehController && x.status_qtd === 'NÃO PROGRAMADO' && (
                     <button className="btn sm primary" aria-expanded={abre1} onClick={() => abre(String(x.contrato_id))}>Programar</button>
                   )}
-                  {ehController && (x.status_qtd === 'ACIMA' || x.status_qtd === 'ABAIXO') && (
-                    <button className="btn sm" disabled={ajustando === String(x.contrato_id)} title={`Muda a M. Mínima na Fila para ${fmtN(x.produzir_m)} m (o PRODUZIR)`} onClick={() => ajustar('mts', x.contrato_id, 'Contrato ' + x.codigo)}>{ajustando === String(x.contrato_id) ? 'Ajustando…' : 'Ajustar qtd'}</button>
+                  {ehController && ['ACIMA', 'ABAIXO', 'DIFERENÇA', 'FILA ALTERADA'].includes(x.status_qtd) && (
+                    <button className="btn sm" disabled={ajustando === String(x.contrato_id)} title={x.refugo_pct != null && Number(x.refugo_pct) > 0 ? `Muda a M. Mínima na Fila para ${fmtN(x.produzir_m)} m + acréscimo de ${fmtP(x.refugo_pct)}%` : `Muda a M. Mínima na Fila para ${fmtN(x.produzir_m)} m (o PRODUZIR)`} onClick={() => ajustar('mts', x.contrato_id, 'Contrato ' + x.codigo)}>{ajustando === String(x.contrato_id) ? 'Ajustando…' : 'Ajustar qtd'}</button>
                   )}
                   {ehController && x.status_qtd === 'PROGRAMADO SEM NECESSIDADE' && (
                     confirmando === String(x.contrato_id) ? (
